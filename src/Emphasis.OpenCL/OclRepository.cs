@@ -23,6 +23,10 @@ namespace Emphasis.OpenCL
 			var api = OclApi.Value;
 
 			var propgram = api.CreateProgramWithSource();
+
+
+			Span<nint> kernelIds = stackalloc nint[256];
+				api.CreateKernelsInProgram(programId, )
 		}
 
 		public async Task<nint> BuildProgram(nint deviceId, nint programId, string options = null)
@@ -45,6 +49,8 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Build failed (OpenCL: {errBuild}).");
 			}
 			
+			
+
 			return 
 		}
 
@@ -55,6 +61,8 @@ namespace Emphasis.OpenCL
 			var kernelId = api.CreateKernel(programId, name, out var err);
 			if (err != (int) CLEnum.Success)
 				throw new Exception($"Unable to create kernel {name} (OpenCL: {err}).");
+
+
 		}
 
 		public void Dispose()
