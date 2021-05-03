@@ -1,0 +1,7 @@
+.vs/
+bin/
+obj/
+pack/
+*.Artifacts/
+
+*.DotSettings.user

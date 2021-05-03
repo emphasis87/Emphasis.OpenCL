@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{7E494C55-973D-4E95-BD9E-BCC6D0E79D89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emphasis.OpenCL", "Emphasis.OpenCL\Emphasis.OpenCL.csproj", "{097E365C-CC55-43E1-946A-D026D8D2EA11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emphasis.OpenCL.Tests", "Emphasis.OpenCL.Tests\Emphasis.OpenCL.Tests.csproj", "{BE2F71AE-FB49-4942-9F27-4FD34798311E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{097E365C-CC55-43E1-946A-D026D8D2EA11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{097E365C-CC55-43E1-946A-D026D8D2EA11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{097E365C-CC55-43E1-946A-D026D8D2EA11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{097E365C-CC55-43E1-946A-D026D8D2EA11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE2F71AE-FB49-4942-9F27-4FD34798311E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE2F71AE-FB49-4942-9F27-4FD34798311E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE2F71AE-FB49-4942-9F27-4FD34798311E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE2F71AE-FB49-4942-9F27-4FD34798311E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BE2F71AE-FB49-4942-9F27-4FD34798311E} = {7E494C55-973D-4E95-BD9E-BCC6D0E79D89}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {403BF554-2884-4050-996C-144B9DE4143F}
+	EndGlobalSection
+EndGlobal
