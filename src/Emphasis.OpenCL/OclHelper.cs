@@ -8,83 +8,38 @@ namespace Emphasis.OpenCL
 	public static class OclHelper
 	{
 		internal static Lazy<CL> OclApi = new(CL.GetApi);
-
-		//public static unsafe int GetListInfo<T>()
-
-		public delegate int HandleList<T>(Span<T> span);
-
-		public static unsafe Span<T> GetListInfo<T>(HandleList<T> handler) where T:struct
+		
+		public static unsafe int GetBuildLog(nint programId, nint deviceId, out string buildLog)
 		{
 			var api = OclApi.Value;
 
-			const int logSize = 2048;
-			Span<T> smallLog = stackalloc T[logSize];
-			ReadOnlySpan<byte> log = smallLog;
-			Span<nuint> smallLogSize = stackalloc nuint[1];
-			var err = handler(smallLog);
+			var size = 2048;
+			Span<byte> result = stackalloc byte[size];
+			Span<nuint> resultSize = stackalloc nuint[1];
+			var err = api.GetProgramBuildInfo(programId, deviceId, (uint)CLEnum.ProgramBuildLog,(uint) size, result, resultSize);
+
 			if (err != (int)CLEnum.Success)
 			{
-				if (err == (int)CLEnum.InvalidValue && (int)smallLogSize[0] <= logSize)
+				if (err == (int)CLEnum.InvalidValue && (int)resultSize[0] > size)
 				{
-					var bigLogSize = smallLogSize[0];
-					var bigLog = new byte[bigLogSize];
-					var handle = GCHandle.Alloc(bigLog, GCHandleType.Pinned);
-					try
-					{
-						err = api.GetProgramBuildInfo(programId, deviceId, (uint)CLEnum.ProgramBuildLog, bigLogSize, (void*)handle.AddrOfPinnedObject(), out _);
-					}
-					finally
-					{
-						handle.Free();
-					}
+					size = (int) resultSize[0];
+					result = new byte[size];
+					err = api.GetProgramBuildInfo(programId, deviceId, (uint)CLEnum.ProgramBuildLog, (uint)size, result, resultSize);
 
 					if (err != (int)CLEnum.Success)
 					{
 						buildLog = "";
 						return err;
 					}
-
-					log = bigLog.AsSpan();
 				}
-			}
-		}
-
-		public static unsafe int GetLog(nint programId, nint deviceId, out string buildLog)
-		{
-			var api = OclApi.Value;
-
-			const int logSize = 2048;
-			Span<byte> smallLog = stackalloc byte[logSize];
-			ReadOnlySpan<byte> log = smallLog;
-			Span<nuint> smallLogSize = stackalloc nuint[1];
-			var err = api.GetProgramBuildInfo(programId, deviceId, (uint)CLEnum.ProgramBuildLog, 2048, smallLog, smallLogSize);
-			if (err != (int) CLEnum.Success)
-			{
-				if (err == (int) CLEnum.InvalidValue && (int) smallLogSize[0] <= logSize)
+				else
 				{
-					var bigLogSize = smallLogSize[0];
-					var bigLog = new byte[bigLogSize];
-					var handle = GCHandle.Alloc(bigLog, GCHandleType.Pinned);
-					try
-					{
-						err = api.GetProgramBuildInfo(programId, deviceId, (uint) CLEnum.ProgramBuildLog, bigLogSize, (void*) handle.AddrOfPinnedObject(), out _);
-					}
-					finally
-					{
-						handle.Free();
-					}
-
-					if (err != (int) CLEnum.Success)
-					{
-						buildLog = "";
-						return err;
-					}
-
-					log = bigLog.AsSpan();
+					buildLog = "";
+					return err;
 				}
 			}
 
-			buildLog = Encoding.ASCII.GetString(log[..-1]);
+			buildLog = Encoding.ASCII.GetString(result[..-1]);
 			return err;
 		}
 	}

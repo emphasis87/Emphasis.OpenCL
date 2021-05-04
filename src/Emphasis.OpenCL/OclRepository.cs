@@ -18,11 +18,12 @@ namespace Emphasis.OpenCL
 	{
 		
 
-		public nint CreateProgram(nint platformId, string source)
+		public unsafe nint CreateProgram(nint contextId, string source)
 		{
 			var api = OclApi.Value;
 
-			var propgram = api.CreateProgramWithSource();
+			var lengths = stackalloc nuint[] {(nuint)source.Length};
+			var programId = api.CreateProgramWithSource(contextId, 1, new[] {source}, lengths, out var err);
 
 
 			Span<nint> kernelIds = stackalloc nint[256];
@@ -42,16 +43,14 @@ namespace Emphasis.OpenCL
 			var errBuild = await Task.Run(Build);
 			if (errBuild != (int) CLEnum.Success)
 			{
-				var errLog = GetLog(programId, deviceId, out var buildLog);
+				var errLog = GetBuildLog(programId, deviceId, out var buildLog);
 				if (errLog != (int) CLEnum.Success)
 					throw new Exception($"Build failed (OpenCL: {errBuild}). Unable to obtain build log (OpenCL: {errLog}).");
 
-				throw new Exception($"Build failed (OpenCL: {errBuild}).");
+				throw new Exception($"Build failed (OpenCL: {errBuild}).\n{buildLog}");
 			}
-			
-			
 
-			return 
+			return errBuild;
 		}
 
 		public async Task<nint> GetKernel(nint programId, string name)
