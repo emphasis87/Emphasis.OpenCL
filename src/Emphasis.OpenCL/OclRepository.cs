@@ -16,18 +16,46 @@ namespace Emphasis.OpenCL
 
 	public class OclRepository : IOclRepository, IDisposable
 	{
-		
+
+
+		Span<nint> CreateKernels(nint programId, out Span<nint> r)
+		{
+			var api = OclApi.Value;
+
+			Span<nint> kernelIds = stackalloc nint[256];
+			Span<uint> kernelCount = stackalloc uint[1];
+			var errKernel = api.CreateKernelsInProgram(programId, 256, kernelIds, kernelCount);
+			if (errKernel != (int)CLEnum.Success)
+			{
+				if (errKernel == (int)CLEnum.InvalidValue && kernelCount[0] > 256)
+				{
+					errKernel = api.CreateKernelsInProgram(programId, 256, kernelIds, kernelCount);
+					if (errKernel != (int)CLEnum.Success)
+					{
+						throw new Exception($"Unable to create kernels in program (OpenCL: {errKernel}).");
+					}
+				}
+				else
+				{
+					throw new Exception($"Unable to create kernels in program (OpenCL: {errKernel}).");
+				}
+			}
+
+			r = kernelIds;
+			return kernelIds;
+		}
 
 		public unsafe nint CreateProgram(nint contextId, string source)
 		{
 			var api = OclApi.Value;
 
 			var lengths = stackalloc nuint[] {(nuint)source.Length};
-			var programId = api.CreateProgramWithSource(contextId, 1, new[] {source}, lengths, out var err);
+			var programId = api.CreateProgramWithSource(contextId, 1, new[] {source}, lengths, out var errProgram);
+			if (errProgram != (int) CLEnum.Success)
+				throw new Exception($"Unable to create a program with source (OpenCL: {errProgram}).");
 
+			
 
-			Span<nint> kernelIds = stackalloc nint[256];
-				api.CreateKernelsInProgram(programId, )
 		}
 
 		public async Task<nint> BuildProgram(nint deviceId, nint programId, string options = null)
