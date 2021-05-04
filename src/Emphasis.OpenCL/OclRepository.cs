@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Disposables;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -14,71 +17,72 @@ namespace Emphasis.OpenCL
 
 	}
 
-	public class OclRepository : IOclRepository, IDisposable
+	public class OclRepository : IOclRepository, ICancelable
 	{
+		private readonly ConcurrentDictionary<(nint contextId, nint deviceId, nint programId), bool> _programs = new();
+		private readonly ConcurrentDictionary<string, Lazy<nint>> _programBySource = new();
 
+		private readonly HashSet<nint> ContextIds = new();
+		private readonly HashSet<string> Sources = new();
 
-		Span<nint> CreateKernels(nint programId, out Span<nint> r)
+		public void AddContexts(params nint[] contextIds)
 		{
-			var api = OclApi.Value;
-
-			Span<nint> kernelIds = stackalloc nint[256];
-			Span<uint> kernelCount = stackalloc uint[1];
-			var errKernel = api.CreateKernelsInProgram(programId, 256, kernelIds, kernelCount);
-			if (errKernel != (int)CLEnum.Success)
-			{
-				if (errKernel == (int)CLEnum.InvalidValue && kernelCount[0] > 256)
-				{
-					errKernel = api.CreateKernelsInProgram(programId, 256, kernelIds, kernelCount);
-					if (errKernel != (int)CLEnum.Success)
-					{
-						throw new Exception($"Unable to create kernels in program (OpenCL: {errKernel}).");
-					}
-				}
-				else
-				{
-					throw new Exception($"Unable to create kernels in program (OpenCL: {errKernel}).");
-				}
-			}
-
-			r = kernelIds;
-			return kernelIds;
+			foreach (var contextId in contextIds) 
+				ContextIds.Add(contextId);
 		}
 
-		public unsafe nint CreateProgram(nint contextId, string source)
+		public void AddSources(params string[] sources)
+		{
+			foreach (var source in sources) 
+				Sources.Add(source);
+		}
+		
+		public async Task BuildPrograms(string options = null)
+		{
+			await Task.WhenAll(
+				ContextIds.Select(contextId => BuildPrograms(contextId, options)));
+		}
+
+		public async Task BuildPrograms(nint contextId, string options = null)
 		{
 			var api = OclApi.Value;
-
-			var lengths = stackalloc nuint[] {(nuint)source.Length};
-			var programId = api.CreateProgramWithSource(contextId, 1, new[] {source}, lengths, out var errProgram);
-			if (errProgram != (int) CLEnum.Success)
-				throw new Exception($"Unable to create a program with source (OpenCL: {errProgram}).");
-
 			
+			var deviceIds = GetDeviceIds(contextId);
+			
+		}
+
+		public async Task BuildProgram(nint contextId, nint programId, string options = null)
+		{
 
 		}
 
-		public async Task<nint> BuildProgram(nint deviceId, nint programId, string options = null)
+		public async Task BuildProgramForDevices(nint programId, nint[] deviceIds, string options = null)
 		{
-			var api = OclApi.Value;
-
-			int Build()
+			var exceptions = new List<Exception>();
+			foreach (var deviceId in deviceIds)
 			{
-				ReadOnlySpan<nint> deviceIds = stackalloc nint[1];
-				return api.BuildProgram(programId, 1, deviceIds, options, null, Span<byte>.Empty);
+				Exception exception = null;
+				try
+				{
+					await BuildProgramForDevice(programId, deviceId, options);
+				}
+				catch (Exception ex)
+				{
+					exception = ex;
+					exceptions.Add(ex);
+				}
+
+				if (exception != null)
+					
 			}
 
-			var errBuild = await Task.Run(Build);
-			if (errBuild != (int) CLEnum.Success)
-			{
-				var errLog = GetBuildLog(programId, deviceId, out var buildLog);
-				if (errLog != (int) CLEnum.Success)
-					throw new Exception($"Build failed (OpenCL: {errBuild}). Unable to obtain build log (OpenCL: {errLog}).");
+			if (exceptions.Count != 0)
+				throw new AggregateException($"Unable to build program {programId}.", exceptions);
+		}
 
-				throw new Exception($"Build failed (OpenCL: {errBuild}).\n{buildLog}");
-			}
-
-			return errBuild;
+		public async Task BuildProgramForDevice(nint programId, nint deviceId, string options = null)
+		{
+			await OclHelper.BuildProgram(programId, deviceId, options);
 		}
 
 		public async Task<nint> GetKernel(nint programId, string name)
@@ -92,9 +96,15 @@ namespace Emphasis.OpenCL
 
 		}
 
+		#region ICancelable
+		private readonly CompositeDisposable _disposable = new();
+		public bool IsDisposed => _disposable.IsDisposed;
+
 		public void Dispose()
 		{
-			
+			if (!IsDisposed)
+				_disposable.Dispose();
 		}
+		#endregion
 	}
 }
