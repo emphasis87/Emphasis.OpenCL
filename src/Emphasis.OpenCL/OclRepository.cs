@@ -19,30 +19,33 @@ namespace Emphasis.OpenCL
 
 	public class OclRepository : IOclRepository, ICancelable
 	{
-		private readonly ConcurrentDictionary<(nint contextId, nint deviceId, nint programId), bool> _programs = new();
+		//private readonly ConcurrentDictionary<(nint contextId, nint deviceId, nint programId), bool> _programs = new();
 		private readonly ConcurrentDictionary<string, Lazy<nint>> _programBySource = new();
+
+		private readonly ConcurrentBag<(string[] source, string options)> _pendingPrograms = new();
+		private readonly ConcurrentBag<nint> _pendingContextIds = new();
+		private readonly ConcurrentBag<(nint contextId, nint programId)> _programs;
 
 		private readonly HashSet<nint> ContextIds = new();
 		private readonly HashSet<string> Sources = new();
 
-		public void AddContexts(params nint[] contextIds)
+		public void AddContexts(nint[] contextIds)
 		{
-			foreach (var contextId in contextIds) 
-				ContextIds.Add(contextId);
+			foreach (var contextId in contextIds)
+				_pendingContextIds.Add(contextId);
 		}
 
-		public void AddSources(params string[] sources)
+		public void AddProgram(string[] sources, string options = null)
 		{
-			foreach (var source in sources) 
-				Sources.Add(source);
+			_pendingPrograms.Add((sources, options));
 		}
 		
-		public async Task BuildPrograms(string options = null)
+		public async Task BuildPrograms(string options = null) 
 		{
 			await Task.WhenAll(
 				ContextIds.Select(contextId => BuildPrograms(contextId, options)));
 		}
-
+		 
 		public async Task BuildPrograms(nint contextId, string options = null)
 		{
 			var api = OclApi.Value;
@@ -51,7 +54,7 @@ namespace Emphasis.OpenCL
 			
 		}
 
-		public async Task BuildProgram(nint contextId, nint programId, string options = null)
+		private async Task BuildProgram(nint contextId, nint programId, string options = null)
 		{
 
 		}
