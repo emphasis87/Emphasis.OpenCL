@@ -24,11 +24,9 @@ namespace Emphasis.OpenCL
 
 		private readonly ConcurrentBag<(string[] source, string options)> _pendingPrograms = new();
 		private readonly ConcurrentBag<nint> _pendingContextIds = new();
-		private readonly ConcurrentBag<(nint contextId, nint programId)> _programs;
-
-		private readonly HashSet<nint> ContextIds = new();
-		private readonly HashSet<string> Sources = new();
-
+		private readonly ConcurrentBag<(nint contextId, nint programId)> _programs = new();
+		private readonly ConcurrentDictionary<(nint contextId, nint deviceId, nint programId), Lazy<(bool success, Exception exception)>> _builds = new();
+		
 		public void AddContexts(nint[] contextIds)
 		{
 			foreach (var contextId in contextIds)
