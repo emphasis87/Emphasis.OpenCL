@@ -1,2 +1,2 @@
 # Emphasis.OpenCL
-A library for easier management of OpenCL kernels.
+A small library for easier OpenCL manipulation.
