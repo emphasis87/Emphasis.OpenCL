@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -196,7 +195,7 @@ namespace Emphasis.OpenCL
 					throw new Exception($"Unable to get platform ids (OpenCL: {errDevices}).");
 			}
 			deviceCount = (int)deviceCounts[0];
-			return deviceIds.Slice(0, deviceCount).ToArray();
+			return deviceIds[..deviceCount].ToArray();
 		}
 		
 		public static nint CreateContext(nint platformId, nint[] deviceIds = null, nint[] properties = null, int deviceType = 0)
