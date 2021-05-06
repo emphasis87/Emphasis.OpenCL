@@ -141,6 +141,8 @@ namespace Emphasis.OpenCL.Tests
 				if (errRead != (int) CLEnum.Success)
 					throw new Exception("Unable to read a buffer.");
 
+				bufferB.ToArray().Should().Equal(2, 4, 6, 8, 10);
+
 				Console.WriteLine(string.Join(", ", bufferB.ToArray()));
 
 				api.ReleaseMemObject(a);
