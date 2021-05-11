@@ -1,7 +1,11 @@
-﻿void kernel multiply(
-	global int* a, 
-	global int* b,
-    int c) 
+﻿#ifndef TDepth
+#define TDepth int
+#endif
+
+void kernel multiply(
+	global TDepth* a, 
+	global TDepth* b,
+    int c)
 {
 	const int x = get_global_id(0);
     b[x] = a[x] * c;
