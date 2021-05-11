@@ -99,19 +99,11 @@ namespace Emphasis.OpenCL.Tests
 
 			void Multiply(nint contextId, nint queueId, nint kernelId, nint deviceId)
 			{
-				Span<int> bufferA = stackalloc int[5] {1, 2, 3, 4, 5};
-				Span<int> bufferB = stackalloc int[5];
-				Span<int> errs = stackalloc int[1];
-				var a = api.CreateBuffer(contextId, CLEnum.MemCopyHostPtr, Size<int>(5), bufferA, errs);
-				if (errs[0] != (int) CLEnum.Success)
-					throw new Exception("Unable to create a buffer.");
+				var memA = CopyBuffer(contextId, stackalloc int[5] { 1, 2, 3, 4, 5 });
+				var memB = CreateBuffer<int>(contextId, 5);
 
-				var b = api.CreateBuffer(contextId, CLEnum.MemHostReadOnly, Size<int>(5), Span<int>.Empty, errs);
-				if (errs[0] != (int) CLEnum.Success)
-					throw new Exception("Unable to create a buffer.");
-
-				SetKernelArg(kernelId, 0, a);
-				SetKernelArg(kernelId, 1, b);
+				SetKernelArg(kernelId, 0, memA);
+				SetKernelArg(kernelId, 1, memB);
 				SetKernelArg(kernelId, 2, 2);
 
 				Span<nuint> globalOffset = stackalloc nuint[] {0};
@@ -122,21 +114,17 @@ namespace Emphasis.OpenCL.Tests
 				if (errEnqueue != (int) CLEnum.Success)
 					throw new Exception("Unable to enqueue kernel.");
 
-				var errFinish = api.Finish(queueId);
-				if (errFinish != (int) CLEnum.Success)
-					throw new Exception("Unable to finish a command queue.");
+				Finish(queueId);
 
-				var errRead = api.EnqueueReadBuffer(queueId, b, true, 0, Size<int>(5), bufferB, 0, Span<nint>.Empty,
-					events);
-				if (errRead != (int) CLEnum.Success)
-					throw new Exception("Unable to read a buffer.");
+				Span<int> bufferB = stackalloc int[5];
+				EnqueueReadBuffer(queueId, memB, true, 0, 5, bufferB, out _);
 
 				bufferB.ToArray().Should().Equal(2, 4, 6, 8, 10);
 
 				Console.WriteLine(string.Join(", ", bufferB.ToArray()));
 
-				api.ReleaseMemObject(a);
-				api.ReleaseMemObject(b);
+				api.ReleaseMemObject(memA);
+				api.ReleaseMemObject(memB);
 			}
 		}
 

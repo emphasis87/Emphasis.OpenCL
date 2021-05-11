@@ -258,6 +258,80 @@ namespace Emphasis.OpenCL
 			return queueId;
 		}
 
+		public static void Finish(nint queueId)
+		{
+			var api = OclApi.Value;
+
+			var errFinish = api.Finish(queueId);
+			if (errFinish != (int)CLEnum.Success)
+				throw new Exception($"Unable to finish a command queue (OpenCL: {errFinish}).");
+		}
+
+		public static void Flush(nint queueId)
+		{
+			var api = OclApi.Value;
+
+			var errFlush = api.Flush(queueId);
+			if (errFlush != (int)CLEnum.Success)
+				throw new Exception($"Unable to flush a command queue (OpenCL: {errFlush}).");
+		}
+
+		public static nint CopyBuffer<T>(nint contextId, Span<T> source, int flags = default)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+
+			Span<int> errs = stackalloc int[1];
+			var bufferId = api.CreateBuffer(contextId,  (CLEnum)flags | CLEnum.MemCopyHostPtr, Size<T>(5), source, errs);
+			var errBuffer = errs[0];
+			if (errBuffer != (int) CLEnum.Success)
+				throw new Exception($"Unable to create a buffer (OpenCL: {errBuffer}).");
+
+			return bufferId;
+		}
+
+		public static nint CreateBuffer<T>(nint contextId, int size, int flags = default)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+			
+			Span<int> errs = stackalloc int[1];
+			var bufferId = api.CreateBuffer(contextId, (CLEnum)flags, Size<T>(size), Span<T>.Empty, errs);
+			var errBuffer = errs[0];
+			if (errBuffer != (int)CLEnum.Success)
+				throw new Exception($"Unable to create a buffer (OpenCL: {errBuffer}).");
+
+			return bufferId;
+		}
+
+		public static void EnqueueReadBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, Span<T> destination, out nint onCompletedEvent, ReadOnlySpan<nint> waitOnEvents = default)
+			where T: unmanaged
+		{
+			var api = OclApi.Value;
+
+			var waitOnEventsCount = (uint) waitOnEvents.Length;
+			Span<nint> onCompletedEvents = stackalloc nint[1];
+			var errRead = api.EnqueueReadBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), destination, waitOnEventsCount, waitOnEvents, onCompletedEvents);
+			if (errRead != (int)CLEnum.Success)
+				throw new Exception($"Unable to read a buffer (OpenCL: {errRead}).");
+
+			onCompletedEvent = onCompletedEvents[0];
+		}
+
+		public static void EnqueueWriteBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, ReadOnlySpan<T> source, out nint onCompletedEvent, ReadOnlySpan<nint> waitOnEvents = default)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+
+			var waitOnEventsCount = (uint)waitOnEvents.Length;
+			Span<nint> onCompletedEvents = stackalloc nint[1];
+			var errWrite = api.EnqueueWriteBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), source, waitOnEventsCount, waitOnEvents, onCompletedEvents);
+			if (errWrite != (int)CLEnum.Success)
+				throw new Exception($"Unable to write to a buffer (OpenCL: {errWrite}).");
+
+			onCompletedEvent = onCompletedEvents[0];
+		}
+
 		public static nint GetContextForProgram(nint programId)
 		{
 			var api = OclApi.Value;
