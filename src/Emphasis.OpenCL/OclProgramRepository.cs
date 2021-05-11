@@ -1,35 +1,48 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reactive.Disposables;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using static Emphasis.OpenCL.OclHelper;
 
 namespace Emphasis.OpenCL
 {
-	public interface IOclProgramRepository
+	public interface IOclProgramRepository : ICancelable
 	{
-		Task<nint> GetProgram(nint context, nint deviceId, string source, string options);
+		Task<nint> GetProgram(OclProgram program);
 	}
 
 	public class OclProgramRepository : IOclProgramRepository
 	{
-		private readonly object _gate = new();
-
-		private readonly ConcurrentDictionary<OclProgram, Lazy<nint>> _programsLazy = new();
-		private readonly ConcurrentDictionary<OclProgram, nint> _programs = new();
+		private readonly ConcurrentDictionary<OclProgram, Lazy<Task<nint>>> _programsLazy = new();
 
 		public async Task<nint> GetProgram(OclProgram program)
 		{
-			
-			if (_programs.TryGetValue(program, out var programId))
-				return programId;
-			
-			var lazy = _programsLazy.GetOrAdd(program, new Lazy<nint>())
+			var api = OclApi.Value;
+
+			async Task<nint> CreateProgram()
+			{
+				var pid = OclHelper.CreateProgram(program.ContextId, program.Source);
+				await BuildProgram(pid, program.DeviceId, program.Options);
+				return pid;
+			}
+
+			var init = _programsLazy.GetOrAdd(program, new Lazy<Task<nint>>(CreateProgram));
+			var programId = await init.Value;
+
+			_disposable.Add(Disposable.Create(() => api.ReleaseProgram(programId)));
+
+			return programId;
 		}
 
-		
+		#region ICancellable
+		private readonly CompositeDisposable _disposable = new();
+
+		public void Dispose()
+		{
+			_disposable.Dispose();
+		}
+
+		public bool IsDisposed => _disposable.IsDisposed;
+		#endregion
 	}
 }

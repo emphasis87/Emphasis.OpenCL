@@ -22,12 +22,20 @@ namespace Emphasis.OpenCL.Tests
 			var contextId = CreateContext(platformId);
 			var deviceId = GetDevicesFromContext(contextId).First();
 
-			var repository = new OclProgramRepository();
+			using var repository = new OclProgramRepository();
 
-			var multiplyI32 = await repository.GetProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=int");
-			var multiplyI16 = await repository.GetProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=short");
+			var multiplyI32 = await repository.GetProgram(new OclProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=int"));
+			var multiplyI16 = await repository.GetProgram(new OclProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=short"));
 
-			api.CreateKernel(multiplyI32, "multiply", out var err);
+			var kernelM16 = CreateKernel(multiplyI16, "multiply");
+			var kernelM32 = CreateKernel(multiplyI32, "multiply");
+
+			var queueId = CreateCommandQueue(contextId, deviceId, (int) CLEnum.QueueOutOfOrderExecModeEnable);
+
+			api.ReleaseKernel(kernelM16);
+			api.ReleaseKernel(kernelM32);
+			api.ReleaseCommandQueue(queueId);
+			api.ReleaseContext(contextId);
 		}
 	}
 }

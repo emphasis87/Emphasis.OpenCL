@@ -77,18 +77,13 @@ namespace Emphasis.OpenCL.Tests
 				{
 					await BuildProgram(programId, deviceId);
 				}
-
-				var kernelId = api.CreateKernel(programId, "multiply", out var err);
-				if (err != (int) CLEnum.Success)
-					throw new Exception("Unable to create a kernel.");
-
+				
+				var kernelId = CreateKernel(programId, "multiply");
 				foreach (var deviceId in deviceIds)
 				{
 					Console.WriteLine($"Device name: {GetDeviceName(deviceId)}");
 
-					var queueId = api.CreateCommandQueue(contextId, deviceId, default, out var errQueue);
-					if (errQueue != (int) CLEnum.Success)
-						throw new Exception("Unable to create command queue.");
+					var queueId = CreateCommandQueue(contextId, deviceId);
 
 					Multiply(contextId, queueId, kernelId, deviceId);
 
@@ -115,20 +110,14 @@ namespace Emphasis.OpenCL.Tests
 				if (errs[0] != (int) CLEnum.Success)
 					throw new Exception("Unable to create a buffer.");
 
-				var errArg0 = api.SetKernelArg(kernelId, 0, Size<nint>(1), a);
-				var errArg1 = api.SetKernelArg(kernelId, 1, Size<nint>(1), b);
-				var errArg2 = api.SetKernelArg(kernelId, 2, Size<int>(1), 2);
-				if (errArg0 != (int) CLEnum.Success)
-					throw new Exception($"Unable to set a kernel argument (OpenCL: {errArg0}).");
-				if (errArg1 != (int) CLEnum.Success)
-					throw new Exception($"Unable to set a kernel argument (OpenCL: {errArg1}).");
-				if (errArg2 != (int) CLEnum.Success)
-					throw new Exception($"Unable to set a kernel argument (OpenCL: {errArg2}).");
+				SetKernelArg(kernelId, 0, a);
+				SetKernelArg(kernelId, 1, b);
+				SetKernelArg(kernelId, 2, 2);
 
 				Span<nuint> globalOffset = stackalloc nuint[] {0};
-				Span<nuint> globalDim = stackalloc nuint[] {5};
+				Span<nuint> globalDimensions = stackalloc nuint[] {5};
 				Span<nint> events = stackalloc nint[1];
-				var errEnqueue = api.EnqueueNdrangeKernel(queueId, kernelId, 1, globalOffset, globalDim,
+				var errEnqueue = api.EnqueueNdrangeKernel(queueId, kernelId, 1, globalOffset, globalDimensions,
 					Span<nuint>.Empty, 0, Span<nint>.Empty, events);
 				if (errEnqueue != (int) CLEnum.Success)
 					throw new Exception("Unable to enqueue kernel.");

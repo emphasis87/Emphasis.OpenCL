@@ -32,7 +32,7 @@ namespace Emphasis.OpenCL
 					throw new Exception($"Unable to get platform ids (OpenCL: {errPlatforms}).");
 			}
 			platformCount = (int)platformCounts[0];
-			return platformIds.Slice(0, platformCount).ToArray();
+			return platformIds[..platformCount].ToArray();
 		}
 
 		private static readonly ConcurrentDictionary<nint, Lazy<string>> PlatformNames = new();
@@ -57,7 +57,7 @@ namespace Emphasis.OpenCL
 						throw new Exception($"Unable to get platform name (OpenCL: {errInfo}).");
 				}
 
-				var result = Encoding.ASCII.GetString(name.Slice(0, nameCount - 1));
+				var result = Encoding.ASCII.GetString(name[..(nameCount - 1)]);
 				return result;
 			}
 
@@ -87,7 +87,7 @@ namespace Emphasis.OpenCL
 						throw new Exception($"Unable to get platform extensions (OpenCL: {errInfo}).");
 				}
 
-				var result = Encoding.ASCII.GetString(extensions.Slice(0, extensionsCount - 1));
+				var result = Encoding.ASCII.GetString(extensions[..(extensionsCount - 1)]);
 				return result;
 			}
 
@@ -117,7 +117,7 @@ namespace Emphasis.OpenCL
 						throw new Exception($"Unable to get device name (OpenCL: {errInfo}).");
 				}
 
-				var result = Encoding.ASCII.GetString(name.Slice(0, nameCount - 1));
+				var result = Encoding.ASCII.GetString(name[..(nameCount - 1)]);
 				return result;
 			}
 
@@ -147,7 +147,7 @@ namespace Emphasis.OpenCL
 						throw new Exception($"Unable to get device extensions (OpenCL: {errInfo}).");
 				}
 
-				var result = Encoding.ASCII.GetString(extensions.Slice(0, extensionsCount - 1));
+				var result = Encoding.ASCII.GetString(extensions[..(extensionsCount - 1)]);
 				return result;
 			}
 
@@ -226,6 +226,38 @@ namespace Emphasis.OpenCL
 			return programId;
 		}
 
+		public static nint CreateKernel(nint programId, string name)
+		{
+			var api = OclApi.Value;
+
+			var kernelId = api.CreateKernel(programId, name, out var errKernel);
+			if (errKernel != (int) CLEnum.Success)
+				throw new Exception($"Unable to create a kernel {name} (OpenCL: {errKernel}).");
+
+			return kernelId;
+		}
+
+		public static void SetKernelArg<T>(nint kernelId, int index, T arg)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+
+			var errArg = api.SetKernelArg(kernelId, (uint)index, Size<T>(1), arg);
+			if (errArg != (int)CLEnum.Success)
+				throw new Exception($"Unable to set a kernel argument {index} (OpenCL: {errArg}).");
+		}
+
+		public static nint CreateCommandQueue(nint contextId, nint deviceId, int properties = default)
+		{
+			var api = OclApi.Value;
+
+			var queueId = api.CreateCommandQueue(contextId, deviceId, (CLEnum)properties, out var errQueue);
+			if (errQueue != (int)CLEnum.Success)
+				throw new Exception($"Unable to create a command queue (OpenCL: {errQueue}).");
+
+			return queueId;
+		}
+
 		public static nint GetContextForProgram(nint programId)
 		{
 			var api = OclApi.Value;
@@ -289,7 +321,7 @@ namespace Emphasis.OpenCL
 				}
 			}
 
-			buildLog = Encoding.ASCII.GetString(result.Slice(0, resultCount - 1));
+			buildLog = Encoding.ASCII.GetString(result[..(resultCount - 1)]);
 			return errInfo;
 		}
 	}
