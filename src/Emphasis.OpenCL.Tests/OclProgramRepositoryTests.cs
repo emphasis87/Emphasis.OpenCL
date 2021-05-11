@@ -20,13 +20,14 @@ namespace Emphasis.OpenCL.Tests
 
 			var platformId = GetPlatforms().First();
 			var contextId = CreateContext(platformId);
+			var deviceId = GetDevicesFromContext(contextId).First();
 
 			var repository = new OclProgramRepository();
-			var multiply = repository.AddSource(Kernels.multiply);
-			var optInt32 = repository.AddOptions("-DTDepth=int");
-			var optInt16 = repository.AddOptions("-DTDepth=short");
 
-			var multiplyInt32 = await repository.AddProgram(contextId, multiply, optInt32);
+			var multiplyI32 = await repository.GetProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=int");
+			var multiplyI16 = await repository.GetProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=short");
+
+			api.CreateKernel(multiplyI32, "multiply", out var err);
 		}
 	}
 }
