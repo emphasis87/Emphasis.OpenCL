@@ -28,6 +28,7 @@ namespace Emphasis.OpenCL.Tests
 				{
 					Console.WriteLine($"Device name: {GetDeviceName(deviceId)}");
 					Console.WriteLine($"Device extensions: {GetDeviceExtensions(deviceId)}");
+					Console.WriteLine($"Device type: {GetDeviceTypeName(deviceId)}");
 				}
 
 				Console.WriteLine();
@@ -51,6 +52,7 @@ namespace Emphasis.OpenCL.Tests
 				{
 					Console.WriteLine($"Device name: {GetDeviceName(deviceId)}");
 					Console.WriteLine($"Device extensions: {GetDeviceExtensions(deviceId)}");
+					Console.WriteLine($"Device type: {GetDeviceTypeName(deviceId)}");
 				}
 
 				api.ReleaseContext(contextId);

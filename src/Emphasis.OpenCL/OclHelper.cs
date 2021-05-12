@@ -61,7 +61,10 @@ namespace Emphasis.OpenCL
 				return result;
 			}
 
-			var nameLazy = PlatformNames.GetOrAdd(platformId, new Lazy<string>(GetName));
+			if (PlatformNames.TryGetValue(platformId, out var nameLazy))
+				return nameLazy.Value;
+
+			nameLazy = PlatformNames.GetOrAdd(platformId, new Lazy<string>(GetName));
 			return nameLazy.Value;
 		}
 
@@ -91,7 +94,10 @@ namespace Emphasis.OpenCL
 				return result;
 			}
 
-			var extensionsLazy = PlatformExtensions.GetOrAdd(platformId, new Lazy<string>(GetExtensions));
+			if (PlatformExtensions.TryGetValue(platformId, out var extensionsLazy))
+				return extensionsLazy.Value;
+
+			extensionsLazy = PlatformExtensions.GetOrAdd(platformId, new Lazy<string>(GetExtensions));
 			return extensionsLazy.Value;
 		}
 
@@ -121,7 +127,10 @@ namespace Emphasis.OpenCL
 				return result;
 			}
 
-			var nameLazy = DeviceNames.GetOrAdd(deviceId, new Lazy<string>(GetName));
+			if (DeviceNames.TryGetValue(deviceId, out var nameLazy))
+				return nameLazy.Value;
+
+			nameLazy = DeviceNames.GetOrAdd(deviceId, new Lazy<string>(GetName));
 			return nameLazy.Value;
 		}
 
@@ -151,8 +160,52 @@ namespace Emphasis.OpenCL
 				return result;
 			}
 
-			var extensionsLazy = DeviceExtensions.GetOrAdd(deviceId, new Lazy<string>(GetExtensions));
+			if (DeviceExtensions.TryGetValue(deviceId, out var extensionsLazy))
+				return extensionsLazy.Value;
+
+			extensionsLazy = DeviceExtensions.GetOrAdd(deviceId, new Lazy<string>(GetExtensions));
 			return extensionsLazy.Value;
+		}
+
+		private static readonly ConcurrentDictionary<nint, Lazy<nuint>> DeviceTypes = new();
+		public static int GetDeviceType(nint deviceId)
+		{
+			var api = OclApi.Value;
+
+			nuint GetDevType()
+			{
+				Span<nuint> deviceInfo = stackalloc nuint[1];
+				Span<nuint> deviceInfoSize = stackalloc nuint[1];
+				var errInfo = api.GetDeviceInfo(deviceId, (uint) CLEnum.DeviceType, Size<nuint>(1), deviceInfo, deviceInfoSize);
+				if (errInfo != (int) CLEnum.Success)
+					throw new Exception($"Unable to get device type (OpenCL: {errInfo}).");
+				
+				return deviceInfo[0];
+			}
+
+			if (DeviceTypes.TryGetValue(deviceId, out var deviceTypeLazy))
+				return (int)deviceTypeLazy.Value;
+
+			deviceTypeLazy = DeviceTypes.GetOrAdd(deviceId, new Lazy<nuint>(GetDevType));
+			return (int) deviceTypeLazy.Value;
+		}
+
+		public static string GetDeviceTypeName(nint deviceId)
+		{
+			return GetDeviceTypeName(GetDeviceType(deviceId));
+		}
+
+		public static string GetDeviceTypeName(int deviceType)
+		{
+			return (CLEnum) deviceType switch
+			{
+				CLEnum.DeviceTypeDefault => "Default",
+				CLEnum.DeviceTypeCpu => "Cpu",
+				CLEnum.DeviceTypeGpu => "Gpu",
+				CLEnum.DeviceTypeAccelerator => "Accelerator",
+				CLEnum.DeviceTypeCustom => "Custom",
+				_ => throw new ArgumentOutOfRangeException($"Unknown device type {deviceType}."),
+			};
 		}
 		
 		public static nint[] GetDevicesFromContext(nint contextId)
