@@ -247,6 +247,31 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Unable to set a kernel argument {index} (OpenCL: {errArg}).");
 		}
 
+		public static nint EnqueueNDRangeKernel(nint queueId, nint kernelId, 
+			ReadOnlySpan<nuint> globalWorkSize,
+			ReadOnlySpan<nuint> globalOffset= default,
+			ReadOnlySpan<nuint> localWorkSize = default,
+			ReadOnlySpan<nint> waitOnEvents = default
+			)
+		{
+			var api = OclApi.Value;
+			
+			Span<nint> onCompletedEvents = stackalloc nint[1];
+			var errEnqueue = api.EnqueueNdrangeKernel(queueId, kernelId,
+				(uint) globalWorkSize.Length,
+				globalOffset,
+				globalWorkSize,
+				localWorkSize,
+				(uint)waitOnEvents.Length, 
+				waitOnEvents, 
+				onCompletedEvents);
+
+			if (errEnqueue != (int)CLEnum.Success)
+				throw new Exception($"Unable to enqueue a kernel (OpenCL: {errEnqueue}).");
+
+			return onCompletedEvents[0];
+		}
+
 		public static nint CreateCommandQueue(nint contextId, nint deviceId, int properties = default)
 		{
 			var api = OclApi.Value;
@@ -304,32 +329,38 @@ namespace Emphasis.OpenCL
 			return bufferId;
 		}
 
-		public static void EnqueueReadBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, Span<T> destination, out nint onCompletedEvent, ReadOnlySpan<nint> waitOnEvents = default)
+		public static nint EnqueueReadBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, Span<T> destination, 
+			ReadOnlySpan<nint> waitOnEvents = default)
 			where T: unmanaged
 		{
 			var api = OclApi.Value;
-
-			var waitOnEventsCount = (uint) waitOnEvents.Length;
+			
 			Span<nint> onCompletedEvents = stackalloc nint[1];
-			var errRead = api.EnqueueReadBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), destination, waitOnEventsCount, waitOnEvents, onCompletedEvents);
+			var errRead = api.EnqueueReadBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), destination,
+				(uint)waitOnEvents.Length,
+				waitOnEvents, 
+				onCompletedEvents);
 			if (errRead != (int)CLEnum.Success)
 				throw new Exception($"Unable to read a buffer (OpenCL: {errRead}).");
 
-			onCompletedEvent = onCompletedEvents[0];
+			return onCompletedEvents[0];
 		}
 
-		public static void EnqueueWriteBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, ReadOnlySpan<T> source, out nint onCompletedEvent, ReadOnlySpan<nint> waitOnEvents = default)
+		public static nint EnqueueWriteBuffer<T>(nint queueId, nint bufferId, bool blocking, int offset, int size, ReadOnlySpan<T> source, 
+			ReadOnlySpan<nint> waitOnEvents = default)
 			where T : unmanaged
 		{
 			var api = OclApi.Value;
-
-			var waitOnEventsCount = (uint)waitOnEvents.Length;
+			
 			Span<nint> onCompletedEvents = stackalloc nint[1];
-			var errWrite = api.EnqueueWriteBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), source, waitOnEventsCount, waitOnEvents, onCompletedEvents);
+			var errWrite = api.EnqueueWriteBuffer(queueId, bufferId, blocking, Size<T>(offset), Size<T>(size), source,
+				(uint)waitOnEvents.Length, 
+				waitOnEvents, 
+				onCompletedEvents);
 			if (errWrite != (int)CLEnum.Success)
 				throw new Exception($"Unable to write to a buffer (OpenCL: {errWrite}).");
 
-			onCompletedEvent = onCompletedEvents[0];
+			return onCompletedEvents[0];
 		}
 
 		public static nint GetContextForProgram(nint programId)

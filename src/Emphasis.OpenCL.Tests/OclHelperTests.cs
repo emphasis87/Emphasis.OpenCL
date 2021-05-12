@@ -105,19 +105,13 @@ namespace Emphasis.OpenCL.Tests
 				SetKernelArg(kernelId, 0, memA);
 				SetKernelArg(kernelId, 1, memB);
 				SetKernelArg(kernelId, 2, 2);
-
-				Span<nuint> globalOffset = stackalloc nuint[] {0};
-				Span<nuint> globalDimensions = stackalloc nuint[] {5};
-				Span<nint> events = stackalloc nint[1];
-				var errEnqueue = api.EnqueueNdrangeKernel(queueId, kernelId, 1, globalOffset, globalDimensions,
-					Span<nuint>.Empty, 0, Span<nint>.Empty, events);
-				if (errEnqueue != (int) CLEnum.Success)
-					throw new Exception("Unable to enqueue kernel.");
+				
+				EnqueueNDRangeKernel(queueId, kernelId, globalWorkSize: stackalloc nuint[] { 5 });
 
 				Finish(queueId);
 
 				Span<int> bufferB = stackalloc int[5];
-				EnqueueReadBuffer(queueId, memB, true, 0, 5, bufferB, out _);
+				EnqueueReadBuffer(queueId, memB, true, 0, 5, bufferB);
 
 				bufferB.ToArray().Should().Equal(2, 4, 6, 8, 10);
 
