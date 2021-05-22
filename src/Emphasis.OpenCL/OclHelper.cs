@@ -336,6 +336,20 @@ namespace Emphasis.OpenCL
 			return queueId;
 		}
 
+		public static void OnEventStatusChanged(nint eventId, int status, Action action)
+		{
+			var api = OclApi.Value;
+
+			var errCallback = api.SetEventCallback(eventId, status, delegate { action?.Invoke(); }, Span<byte>.Empty);
+			if (errCallback != (int)CLEnum.Success)
+				throw new Exception($"Unable to set event callback (OpenCL: {errCallback}).");
+		}
+
+		public static void OnEventCompleted(nint eventId, Action action)
+		{
+			OnEventStatusChanged(eventId, (int) CLEnum.Complete, action);
+		}
+
 		public static void Finish(nint queueId)
 		{
 			var api = OclApi.Value;
