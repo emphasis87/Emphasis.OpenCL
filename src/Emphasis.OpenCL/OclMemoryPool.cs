@@ -41,22 +41,24 @@ namespace Emphasis.OpenCL
 			{
 				contextBucket = _contextBuckets.GetOrAdd((contextId, memoryFlags), new ContextMemoryFlagsBucket(contextId, memoryFlags));
 			}
-			
-			if (TryRentBuffer(contextBucket, out var rentedBufferId))
-				return rentedBufferId;
+
+			if (!TryRentBuffer(contextBucket, minSize, out var bufferBucket))
+			{
+
+			}
 			
 			var createdBufferId = CreateBuffer<T>(contextId, minSize, memoryFlags);
 			return createdBufferId;
 		}
 
-		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, int minSize, out nint bufferId)
+		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, int minSize, out BufferBucket bufferBucket)
 		{
-			bufferId = default;
+			bufferBucket = default;
 			var bufferBuckets = contextBucket.BufferBuckets;
 
+			int n0, n1;
 			var rwLock = contextBucket.ReaderWriterLock;
 			rwLock.EnterReadLock();
-			int n0, n1;
 			try
 			{
 				var count = bufferBuckets.Count;
@@ -73,10 +75,11 @@ namespace Emphasis.OpenCL
 				{
 					var min = bufferBuckets.Keys[n0];
 					if (min < minSize)
-					{
-
-					}
+						n0 = (n0 + n1) / 2;
 				}
+
+				if (bufferBuckets.Keys[n0] > 2 * minSize)
+					return false;
 			}
 			finally
 			{
