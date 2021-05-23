@@ -2,9 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Timers;
+using System.Threading;
 using Silk.NET.OpenCL;
 using static Emphasis.OpenCL.OclHelper;
+using Timer = System.Timers.Timer;
 
 namespace Emphasis.OpenCL
 {
@@ -40,36 +41,48 @@ namespace Emphasis.OpenCL
 			{
 				contextBucket = _contextBuckets.GetOrAdd((contextId, memoryFlags), new ContextMemoryFlagsBucket(contextId, memoryFlags));
 			}
-
-			lock (contextBucket)
-			{
-				if (TryRentBuffer(contextBucket, out var rentedBufferId))
-					return rentedBufferId;
-			}
+			
+			if (TryRentBuffer(contextBucket, out var rentedBufferId))
+				return rentedBufferId;
 			
 			var createdBufferId = CreateBuffer<T>(contextId, minSize, memoryFlags);
 			return createdBufferId;
 		}
 
-		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, out nint bufferId)
+		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, int minSize, out nint bufferId)
 		{
-
-			var bufferBuckets = contextBucket.BufferBuckets;
-			var count = bufferBuckets.Count;
-			if (count == 0)
-			{
-				bufferId = default;
-				return false;
-			}
-
-			var n0 = 0;
-			var n1 = bufferBuckets.Count - 1;
-			while (n0 != n1)
-			{
-
-			}
-
 			bufferId = default;
+			var bufferBuckets = contextBucket.BufferBuckets;
+
+			var rwLock = contextBucket.ReaderWriterLock;
+			rwLock.EnterReadLock();
+			int n0, n1;
+			try
+			{
+				var count = bufferBuckets.Count;
+				if (count == 0)
+					return false;
+				
+				n1 = bufferBuckets.Count - 1;
+				var max = bufferBuckets.Keys[n1];
+				if (max < minSize)
+					return false;
+
+				n0 = 0;
+				while (n0 != n1)
+				{
+					var min = bufferBuckets.Keys[n0];
+					if (min < minSize)
+					{
+
+					}
+				}
+			}
+			finally
+			{
+				rwLock.ExitReadLock();
+			}
+			
 			return false;
 		}
 
@@ -88,6 +101,7 @@ namespace Emphasis.OpenCL
 			public nint ContextId { get; }
 			public int MemoryFlags { get; }
 
+			public ReaderWriterLockSlim ReaderWriterLock = new();
 			public readonly SortedList<int, BufferBucket> BufferBuckets = new();
 
 			public ContextMemoryFlagsBucket(nint contextId, int memoryFlags)
