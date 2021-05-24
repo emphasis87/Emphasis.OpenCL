@@ -12,6 +12,7 @@ namespace Emphasis.OpenCL
 		internal static Lazy<CL> OclApi = new(CL.GetApi);
 
 		internal static nuint Size<T>(int count) => (nuint)(Marshal.SizeOf<T>() * count);
+		internal static nuint Size<T>(long count) => (nuint)(Marshal.SizeOf<T>() * count);
 
 		public static nint[] GetPlatforms()
 		{
@@ -382,7 +383,7 @@ namespace Emphasis.OpenCL
 			return bufferId;
 		}
 
-		public static nint CreateBuffer<T>(nint contextId, int size, int flags = default)
+		public static nint CreateBuffer<T>(nint contextId, long size, int flags = default)
 			where T : unmanaged
 		{
 			var api = OclApi.Value;
@@ -428,6 +429,45 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Unable to write to a buffer (OpenCL: {errWrite}).");
 
 			return onCompletedEvents[0];
+		}
+
+		public static int GetMemObjectMemoryFlags(nint memObjectId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoLength = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetMemObjectInfo(memObjectId, (uint)CLEnum.MemFlags, Size<nint>(1), info, infoLength);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get memory object memory flags (OpenCL: {errInfo}).");
+
+			return (int) info[0];
+		}
+
+		public static long GetMemObjectSize(nint memObjectId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoLength = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetMemObjectInfo(memObjectId, (uint)CLEnum.MemSize, Size<nint>(1), info, infoLength);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get memory object size (OpenCL: {errInfo}).");
+
+			return info[0];
+		}
+
+		public static nint GetMemObjectContext(nint memObjectId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoLength = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetMemObjectInfo(memObjectId, (uint)CLEnum.MemContext, Size<nint>(1), info, infoLength);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get memory object context (OpenCL: {errInfo}).");
+
+			return info[0];
 		}
 
 		public static nint GetContextForProgram(nint programId)
