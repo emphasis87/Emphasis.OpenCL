@@ -51,40 +51,34 @@ namespace Emphasis.OpenCL
 			return createdBufferId;
 		}
 
-		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, int minSize, out BufferBucket bufferBucket)
+		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, int minSize, out nint bufferId)
 		{
-			bufferBucket = default;
-			var bufferBuckets = contextBucket.BufferBuckets;
+			bufferId = default;
 
-			int n0, n1;
-			var rwLock = contextBucket.ReaderWriterLock;
-			rwLock.EnterReadLock();
-			try
-			{
-				var count = bufferBuckets.Count;
-				if (count == 0)
-					return false;
+			var buffers = contextBucket.Buffers;
+			if (buffers.Count == 0)
+				return false;
+
+			var keys = buffers.Keys;
+
+			var count = buffers.Count;
 				
-				n1 = bufferBuckets.Count - 1;
-				var max = bufferBuckets.Keys[n1];
-				if (max < minSize)
-					return false;
+				
+			n1 = buffers.Count - 1;
+			var max = buffers.Keys[n1];
+			if (max < minSize)
+				return false;
 
-				n0 = 0;
-				while (n0 != n1)
-				{
-					var min = bufferBuckets.Keys[n0];
-					if (min < minSize)
-						n0 = (n0 + n1) / 2;
-				}
-
-				if (bufferBuckets.Keys[n0] > 2 * minSize)
-					return false;
-			}
-			finally
+			n0 = 0;
+			while (n0 != n1)
 			{
-				rwLock.ExitReadLock();
+				var min = buffers.Keys[n0];
+				if (min < minSize)
+					n0 = (n0 + n1) / 2;
 			}
+
+			if (buffers.Keys[n0] > 2 * minSize)
+				return false;
 			
 			return false;
 		}
@@ -103,37 +97,13 @@ namespace Emphasis.OpenCL
 		{
 			public nint ContextId { get; }
 			public int MemoryFlags { get; }
-
-			public ReaderWriterLockSlim ReaderWriterLock = new();
-			public readonly SortedList<int, BufferBucket> BufferBuckets = new();
+			
+			public readonly SortedList<(int size, long ticks), nint> Buffers = new();
 
 			public ContextMemoryFlagsBucket(nint contextId, int memoryFlags)
 			{
 				ContextId = contextId;
 				MemoryFlags = memoryFlags;
-			}
-		}
-
-		internal class BufferBucket
-		{
-			
-		}
-
-
-		internal readonly struct OclBuffer : IComparable<OclBuffer>
-		{
-			public nint BufferId { get; }
-			public int Size { get; }
-			
-			public OclBuffer(nint bufferId, int size)
-			{
-				BufferId = bufferId;
-				Size = size;
-			}
-
-			public int CompareTo(OclBuffer other)
-			{
-				return Size.CompareTo(other.Size);
 			}
 		}
 	}
