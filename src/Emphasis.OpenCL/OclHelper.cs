@@ -208,7 +208,13 @@ namespace Emphasis.OpenCL
 				_ => throw new ArgumentOutOfRangeException($"Unknown device type {deviceType}."),
 			};
 		}
-		
+
+		public static nint[] GetContextDevices(nint contextId)
+		{
+			return GetDevicesFromContext(contextId);
+		}
+
+
 		public static nint[] GetDevicesFromContext(nint contextId)
 		{
 			var api = OclApi.Value;
@@ -225,6 +231,11 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Unable to get context info {CLEnum.ContextDevices} (OpenCL: {errDevices}).");
 
 			return deviceIds.ToArray();
+		}
+
+		public static nint[] GetPlatformDevices(nint platformId, int deviceType = 0)
+		{
+			return GetDevicesForPlatform(platformId, deviceType);
 		}
 
 		public static nint[] GetDevicesForPlatform(nint platformId, int deviceType = 0)
@@ -383,13 +394,13 @@ namespace Emphasis.OpenCL
 			return bufferId;
 		}
 
-		public static nint CreateBuffer<T>(nint contextId, long size, int flags = default)
+		public static nint CreateBuffer<T>(nint contextId, long size, int memoryFlags = default)
 			where T : unmanaged
 		{
 			var api = OclApi.Value;
 			
 			Span<int> errs = stackalloc int[1];
-			var bufferId = api.CreateBuffer(contextId, (CLEnum)flags, Size<T>(size), Span<T>.Empty, errs);
+			var bufferId = api.CreateBuffer(contextId, (CLEnum)memoryFlags, Size<T>(size), Span<T>.Empty, errs);
 			var errBuffer = errs[0];
 			if (errBuffer != (int)CLEnum.Success)
 				throw new Exception($"Unable to create a buffer (OpenCL: {errBuffer}).");
@@ -535,6 +546,134 @@ namespace Emphasis.OpenCL
 
 			buildLog = Encoding.ASCII.GetString(result[..(resultCount - 1)]);
 			return errInfo;
+		}
+
+		public static void ReleaseProgram(nint programId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseProgram(programId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release program (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseMemObject(nint memObjectId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseMemObject(memObjectId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release memory object (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseCommandQueue(nint queueId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseCommandQueue(queueId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release command queue (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseContext(nint contextId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseContext(contextId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release context (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseDevice(nint deviceId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseDevice(deviceId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release device (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseEvent(nint eventId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseEvent(eventId);
+			if (errRelease != (int) CLEnum.Success)
+				throw new Exception($"Unable to release event (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseKernel(nint kernelId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseKernel(kernelId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release kernel (OpenCL: {errRelease}).");
+		}
+
+		public static void ReleaseSampler(nint samplerId)
+		{
+			var api = OclApi.Value;
+			var errRelease = api.ReleaseSampler(samplerId);
+			if (errRelease != (int)CLEnum.Success)
+				throw new Exception($"Unable to release sampler (OpenCL: {errRelease}).");
+		}
+
+		public static void RetainProgram(nint programId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainProgram(programId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain program (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainMemObject(nint memObjectId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainMemObject(memObjectId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain memory object (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainCommandQueue(nint queueId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainCommandQueue(queueId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain command queue (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainContext(nint contextId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainContext(contextId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain context (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainDevice(nint deviceId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainDevice(deviceId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain device (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainEvent(nint eventId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainEvent(eventId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain event (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainKernel(nint kernelId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainKernel(kernelId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain kernel (OpenCL: {errRetain}).");
+		}
+
+		public static void RetainSampler(nint samplerId)
+		{
+			var api = OclApi.Value;
+			var errRetain = api.RetainSampler(samplerId);
+			if (errRetain != (int)CLEnum.Success)
+				throw new Exception($"Unable to retain sampler (OpenCL: {errRetain}).");
 		}
 	}
 }

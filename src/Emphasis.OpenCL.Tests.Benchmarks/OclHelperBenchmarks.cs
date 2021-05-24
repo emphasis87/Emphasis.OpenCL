@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
-using static Emphasis.OpenCL.OclHelper;
 
 namespace Emphasis.OpenCL.Tests.Benchmarks
 {
@@ -13,9 +12,9 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		private nint _platformId;
 		private nint _deviceId;
 
-		public nint[] _platformIds;
-		public nint[] _deviceIds;
-		public string _extensions;
+		public nint[] PlatformIds;
+		public nint[] DeviceIds;
+		public string Extensions;
 
 		[GlobalSetup]
 		public void Setup()
@@ -27,25 +26,25 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		[Benchmark]
 		public void GetPlatforms()
 		{
-			_platformIds = OclHelper.GetPlatforms();
+			PlatformIds = OclHelper.GetPlatforms();
 		}
 
 		[Benchmark]
 		public void GetPlatformExtensions()
 		{
-			_extensions = OclHelper.GetPlatformExtensions(_platformId);
+			Extensions = OclHelper.GetPlatformExtensions(_platformId);
 		}
 
 		[Benchmark]
 		public void GetDeviceExtensions()
 		{
-			_extensions = OclHelper.GetDeviceExtensions(_deviceId);
+			Extensions = OclHelper.GetDeviceExtensions(_deviceId);
 		}
 
 		[Benchmark]
 		public void GetDevicesForPlatform()
 		{
-			_deviceIds = OclHelper.GetDevicesForPlatform(_platformId);
+			DeviceIds = OclHelper.GetDevicesForPlatform(_platformId);
 		}
 	}
 }

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Disposables;
+using System.Runtime.InteropServices;
 using Silk.NET.OpenCL;
 using static Emphasis.OpenCL.OclHelper;
 using Timer = System.Timers.Timer;
@@ -10,32 +11,31 @@ namespace Emphasis.OpenCL
 {
 	public interface IOclMemoryPool : ICancelable
 	{
-		nint RentBuffer<T>(nint contextId, int memoryFlags, long minSize) where T : unmanaged;
+		nint RentBuffer<T>(nint contextId, long minSize, int memoryFlags = default) where T : unmanaged;
 		void ReturnBuffer(nint bufferId);
+		void TrimExcess(TimeSpan? releaseInterval = default);
 	}
 
 	public class OclMemoryPool : IOclMemoryPool
 	{
-		public static OclMemoryPool Shared { get; } = new OclMemoryPool();
+		public static OclMemoryPool Shared { get; } = new();
 
 		private readonly ConcurrentDictionary<(nint contextId, int memoryFlags), ContextMemoryFlagsBucket> _contextBuckets = new();
-		private readonly Timer _gcTimer;
 		private readonly CompositeDisposable _disposable;
+		private readonly Timer _gcTimer;
 
 		public TimeSpan TrimmingInterval { get; } = TimeSpan.FromSeconds(1);
 		public TimeSpan ReleaseInterval { get; } = TimeSpan.FromSeconds(5);
 
 		public OclMemoryPool()
 		{
-			_gcTimer = new Timer();
+			_gcTimer = new Timer(TrimmingInterval.TotalMilliseconds);
 			_gcTimer.Elapsed += (_, _) => TrimExcess();
-			_gcTimer.Interval = TrimmingInterval.Milliseconds;
-			_gcTimer.Start();
 
 			_disposable = new CompositeDisposable(_gcTimer);
 		}
 
-		public nint RentBuffer<T>(nint contextId, int memoryFlags, long minSize) where T : unmanaged
+		public nint RentBuffer<T>(nint contextId, long minSize, int memoryFlags = default) where T : unmanaged
 		{
 			if ((memoryFlags & (int) CLEnum.MemCopyHostPtr) != 0)
 				throw new Exception("Unable to use CL_MEM_COPY_HOST_PTR as memory flags within OpenCL buffer memory pool.");
@@ -43,16 +43,18 @@ namespace Emphasis.OpenCL
 			if (!_contextBuckets.TryGetValue((contextId, memoryFlags), out var contextBucket))
 				contextBucket = _contextBuckets.GetOrAdd((contextId, memoryFlags), new ContextMemoryFlagsBucket(contextId, memoryFlags));
 
-			if (TryRentBuffer(contextBucket, minSize, out var bufferId))
+			if (TryRentBuffer<T>(contextBucket, minSize, out var bufferId))
 				return bufferId;
 			
 			var createdBufferId = CreateBuffer<T>(contextId, minSize, memoryFlags);
 			return createdBufferId;
 		}
 
-		private bool TryRentBuffer(ContextMemoryFlagsBucket contextBucket, long minSize, out nint bufferId)
+		private bool TryRentBuffer<T>(ContextMemoryFlagsBucket contextBucket, long minSize, out nint bufferId) where T : unmanaged
 		{
 			bufferId = default;
+
+			minSize *= Marshal.SizeOf<T>();
 			
 			lock (contextBucket)
 			{
@@ -114,9 +116,12 @@ namespace Emphasis.OpenCL
 
 				buffers.Add((size, DateTime.Now.Ticks), bufferId);
 			}
+
+			if (!_gcTimer.Enabled)
+				_gcTimer.Start();
 		}
 
-		public void TrimExcess()
+		public void TrimExcess(TimeSpan? releaseInterval = default)
 		{
 			foreach (var pair in _contextBuckets)
 			{
@@ -130,7 +135,7 @@ namespace Emphasis.OpenCL
 					if (count == 0)
 						return;
 
-					var releaseLimit = DateTime.Now.Ticks - ReleaseInterval.Ticks;
+					var releaseLimit = DateTime.Now.Ticks - (releaseInterval?.Ticks ?? ReleaseInterval.Ticks);
 					for (var i = 0; i < buffers.Count;)
 					{
 						var (_, ticks) = buffers.Keys[i];
@@ -139,6 +144,7 @@ namespace Emphasis.OpenCL
 							var bufferId = buffers.Values[i];
 							bufferIds.Remove(bufferId);
 							buffers.RemoveAt(i);
+							ReleaseMemObject(bufferId);
 							continue;
 						}
 						i++;
@@ -166,7 +172,14 @@ namespace Emphasis.OpenCL
 
 		public void Dispose()
 		{
-			_disposable.Dispose();
+			lock (_disposable)
+			{
+				if (IsDisposed) 
+					return;
+
+				TrimExcess(TimeSpan.Zero);
+				_disposable.Dispose();
+			}
 		}
 	}
 }
