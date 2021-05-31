@@ -348,6 +348,34 @@ namespace Emphasis.OpenCL
 			return queueId;
 		}
 
+		public static nint GetCommandQueueContext(nint queueId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> contextsCounts = stackalloc nuint[1];
+			Span<nint> contextIds = stackalloc nint[1];
+			var errInfo = api.GetCommandQueueInfo(queueId, (uint)CLEnum.QueueContext, Size<nint>(1), contextIds, contextsCounts);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get command queue context (OpenCL: {errInfo}).");
+
+			var contextId = contextIds[0];
+			return contextId;
+		}
+
+		public static nint GetCommandQueueDevice(nint queueId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> deviceCounts = stackalloc nuint[1];
+			Span<nint> deviceIds = stackalloc nint[1];
+			var errInfo = api.GetCommandQueueInfo(queueId, (uint)CLEnum.QueueDevice, Size<nint>(1), deviceIds, deviceCounts);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get command queue device (OpenCL: {errInfo}).");
+
+			var deviceId = deviceIds[0];
+			return deviceId;
+		}
+
 		public static void OnEventStatusChanged(nint eventId, int status, Action action)
 		{
 			var api = OclApi.Value;
@@ -494,7 +522,7 @@ namespace Emphasis.OpenCL
 			var contextId = contextIds[0];
 			return contextId;
 		}
-		
+
 		public static async Task BuildProgram(nint programId, nint deviceId, string options = null)
 		{
 			var api = OclApi.Value;

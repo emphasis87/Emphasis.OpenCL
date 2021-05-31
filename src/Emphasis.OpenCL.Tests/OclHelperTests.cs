@@ -38,8 +38,6 @@ namespace Emphasis.OpenCL.Tests
 		[Test]
 		public void ContextTest()
 		{
-			var api = OclApi.Value;
-
 			var platformIds = GetPlatforms();
 			foreach (var platformId in platformIds)
 			{
@@ -55,7 +53,7 @@ namespace Emphasis.OpenCL.Tests
 					Console.WriteLine($"Device type: {GetDeviceTypeName(deviceId)}");
 				}
 
-				api.ReleaseContext(contextId);
+				ReleaseContext(contextId);
 
 				Console.WriteLine();
 			}
@@ -64,8 +62,6 @@ namespace Emphasis.OpenCL.Tests
 		[Test]
 		public async Task ProgramTest()
 		{
-			var api = OclApi.Value;
-
 			var platformIds = GetPlatforms();
 			foreach (var platformId in platformIds)
 			{
@@ -89,12 +85,12 @@ namespace Emphasis.OpenCL.Tests
 
 					Multiply(contextId, queueId, kernelId, deviceId);
 
-					api.ReleaseKernel(kernelId);
-					api.ReleaseCommandQueue(queueId);
+					ReleaseKernel(kernelId);
+					ReleaseCommandQueue(queueId);
 				}
 
-				api.ReleaseProgram(programId);
-				api.ReleaseContext(contextId);
+				ReleaseProgram(programId);
+				ReleaseContext(contextId);
 
 				Console.WriteLine();
 			}
@@ -119,8 +115,8 @@ namespace Emphasis.OpenCL.Tests
 
 				Console.WriteLine(string.Join(", ", bufferB.ToArray()));
 
-				api.ReleaseMemObject(memA);
-				api.ReleaseMemObject(memB);
+				ReleaseMemObject(memA);
+				ReleaseMemObject(memB);
 			}
 		}
 
@@ -155,8 +151,8 @@ namespace Emphasis.OpenCL.Tests
 					Console.WriteLine(exception.ToString());
 				}
 
-				api.ReleaseProgram(programId);
-				api.ReleaseContext(contextId);
+				ReleaseProgram(programId);
+				ReleaseContext(contextId);
 
 				Console.WriteLine();
 			}
@@ -165,8 +161,6 @@ namespace Emphasis.OpenCL.Tests
 		[Test]
 		public void Can_add_same_program_multiple_times()
 		{
-			var api = OclApi.Value;
-
 			var platformId = GetPlatforms().First();
 			var contextId = CreateContext(platformId);
 			var programId1 = CreateProgram(contextId, Kernels.multiply);
@@ -174,9 +168,29 @@ namespace Emphasis.OpenCL.Tests
 
 			programId1.Should().NotBe(programId2);
 
-			api.ReleaseProgram(programId1);
-			api.ReleaseProgram(programId2);
-			api.ReleaseContext(contextId);
+			ReleaseProgram(programId1);
+			ReleaseProgram(programId2);
+			ReleaseContext(contextId);
+		}
+
+		[Test]
+		public void Can_get_queue_info()
+		{
+			// Arrange:
+			var platformId = GetPlatforms().First();
+			var deviceId = GetDevicesForPlatform(platformId).First();
+			var contextId = CreateContext(platformId);
+			var queueId = CreateCommandQueue(contextId, deviceId);
+
+			// Act:
+			var contextId2 = GetCommandQueueContext(queueId);
+			var deviceId2 = GetCommandQueueDevice(queueId);
+
+			// Assert:
+			contextId2.Should().Be(contextId);
+			deviceId2.Should().Be(deviceId);
+
+			ReleaseContext(contextId);
 		}
 	}
 }

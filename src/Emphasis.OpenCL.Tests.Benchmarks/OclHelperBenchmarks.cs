@@ -11,16 +11,30 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 	{
 		private nint _platformId;
 		private nint _deviceId;
+		private nint _contextId;
+		private nint _queueId;
 
 		public nint[] PlatformIds;
 		public nint[] DeviceIds;
+		public nint DeviceId;
+		public nint ContextId;
 		public string Extensions;
+
 
 		[GlobalSetup]
 		public void Setup()
 		{
 			_platformId = OclHelper.GetPlatforms().First();
 			_deviceId = OclHelper.GetDevicesForPlatform(_platformId).First();
+			_contextId = OclHelper.CreateContext(_platformId, new[] {_deviceId});
+			_queueId = OclHelper.CreateCommandQueue(_contextId, _deviceId);
+		}
+
+		[GlobalCleanup]
+		public void Cleanup()
+		{
+			OclHelper.ReleaseContext(_contextId);
+			OclHelper.ReleaseCommandQueue(_queueId);
 		}
 
 		[Benchmark]
@@ -45,6 +59,18 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		public void GetDevicesForPlatform()
 		{
 			DeviceIds = OclHelper.GetDevicesForPlatform(_platformId);
+		}
+
+		[Benchmark]
+		public void GetCommandQueueContext()
+		{
+			ContextId = OclHelper.GetCommandQueueContext(_queueId);
+		}
+
+		[Benchmark]
+		public void GetCommandQueueDevice()
+		{
+			DeviceId = OclHelper.GetCommandQueueDevice(_queueId);
 		}
 	}
 }
