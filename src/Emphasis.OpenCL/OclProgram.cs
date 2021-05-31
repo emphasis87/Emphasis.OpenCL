@@ -2,7 +2,7 @@
 
 namespace Emphasis.OpenCL
 {
-	public readonly struct OclProgram
+	public class OclProgram
 	{
 		public nint ContextId { get; }
 		public nint DeviceId { get; }
