@@ -45,10 +45,23 @@ namespace Emphasis.OpenCL
 
 		public void Dispose()
 		{
+			Dispose(true);
+		}
+
+		private void Dispose(bool isDisposing)
+		{
+			if (isDisposing)
+				GC.SuppressFinalize(this);
+
 			_disposable.Dispose();
 		}
 
 		public bool IsDisposed => _disposable.IsDisposed;
 		#endregion
+
+		~OclProgramRepository()
+		{
+			Dispose(false);
+		}
 	}
 }

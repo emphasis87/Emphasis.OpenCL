@@ -168,18 +168,33 @@ namespace Emphasis.OpenCL
 			}
 		}
 
+		#region ICancellable
 		public bool IsDisposed => _disposable.IsDisposed;
 
 		public void Dispose()
 		{
+			Dispose(true);
+		}
+
+		private void Dispose(bool isDisposing)
+		{
+			if (isDisposing)
+				GC.SuppressFinalize(this);
+
 			lock (_disposable)
 			{
-				if (IsDisposed) 
+				if (IsDisposed)
 					return;
 
 				TrimExcess(TimeSpan.Zero);
 				_disposable.Dispose();
 			}
+		}
+		#endregion
+
+		~OclMemoryPool()
+		{
+			Dispose(false);
 		}
 	}
 }
