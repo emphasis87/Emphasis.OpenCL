@@ -9,16 +9,16 @@ using Timer = System.Timers.Timer;
 
 namespace Emphasis.OpenCL
 {
-	public interface IOclMemoryPool : ICancelable
+	public interface IOclMemoryPool
 	{
 		nint RentBuffer<T>(nint contextId, long minSize, int memoryFlags = default) where T : unmanaged;
 		void ReturnBuffer(nint bufferId);
 		void TrimExcess(TimeSpan? releaseInterval = default);
 	}
 
-	public class OclMemoryPool : IOclMemoryPool
+	public class OclMemoryPool : IOclMemoryPool, ICancelable
 	{
-		public static OclMemoryPool Shared { get; } = new();
+		public static IOclMemoryPool Shared { get; } = new OclMemoryPool();
 
 		private readonly ConcurrentDictionary<(nint contextId, int memoryFlags), ContextMemoryFlagsBucket> _contextBuckets = new();
 		private readonly CompositeDisposable _disposable;

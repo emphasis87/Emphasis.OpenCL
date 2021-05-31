@@ -6,15 +6,15 @@ using static Emphasis.OpenCL.OclHelper;
 
 namespace Emphasis.OpenCL
 {
-	public interface IOclProgramRepository : ICancelable
+	public interface IOclProgramRepository
 	{
 		Task<nint> GetProgram(nint contextId, nint deviceId, string source, string options);
 		Task<nint> GetProgram(OclProgram program);
 	}
 
-	public class OclProgramRepository : IOclProgramRepository
+	public class OclProgramRepository : IOclProgramRepository, ICancelable
 	{
-		public static OclProgramRepository Shared { get; } = new();
+		public static IOclProgramRepository Shared { get; } = new OclProgramRepository();
 
 		private readonly ConcurrentDictionary<OclProgram, Lazy<Task<nint>>> _programsLazy = new();
 
