@@ -209,5 +209,29 @@ namespace Emphasis.OpenCL.Tests
 			// Assert:
 			_contextDestructorCalled.Should().Be(1);
 		}
+
+		[Test]
+		public async Task Can_get_kernel_work_group_size()
+		{
+			var platformId = GetPlatforms().First();
+			var contextId = CreateContext(platformId);
+			var programId = CreateProgram(contextId, Kernels.multiply);
+
+			var deviceIds = GetContextDevices(contextId);
+			foreach (var deviceId in deviceIds)
+			{
+				await BuildProgram(programId, deviceId);
+			}
+
+			var kernelId = CreateKernel(programId, "multiply");
+
+			foreach (var deviceId in deviceIds)
+			{
+				var size = GetKernelWorkGroupSize(kernelId, deviceId);
+				var sizeMultiple = GetKernelPreferredWorkGroupSizeMultiple(kernelId, deviceId);
+				Console.WriteLine($"{GetDeviceName(deviceId)}: Work group size: {size}");
+				Console.WriteLine($"{GetDeviceName(deviceId)}: Preferred work group size multiple: {sizeMultiple}");
+			}
+		}
 	}
 }

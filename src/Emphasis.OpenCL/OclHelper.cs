@@ -282,7 +282,6 @@ namespace Emphasis.OpenCL
 		public static nint CreateProgram(nint contextId, string source)
 		{
 			var api = OclApi.Value;
-			
 			var lengths = (nuint)source.Length;
 			var programId = api.CreateProgramWithSource(contextId, 1, new[] { source }, lengths, out var errProgram);
 			if (errProgram != (int)CLEnum.Success)
@@ -294,12 +293,35 @@ namespace Emphasis.OpenCL
 		public static nint CreateKernel(nint programId, string name)
 		{
 			var api = OclApi.Value;
-
 			var kernelId = api.CreateKernel(programId, name, out var errKernel);
 			if (errKernel != (int) CLEnum.Success)
 				throw new Exception($"Unable to create a kernel {name} (OpenCL: {errKernel}).");
 
 			return kernelId;
+		}
+
+		public static uint GetKernelWorkGroupSize(nint kernelId, nint deviceId)
+		{
+			var api = OclApi.Value;
+			Span<nuint> kernelInfo = stackalloc nuint[1];
+			Span<nuint> kernelInfoSize = stackalloc nuint[1];
+			var errInfo = api.GetKernelWorkGroupInfo(kernelId, deviceId, (uint)CLEnum.KernelWorkGroupSize, Size<nuint>(1), kernelInfo, kernelInfoSize);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get kernel work group size (OpenCL: {errInfo}).");
+
+			return (uint) kernelInfo[0];
+		}
+
+		public static uint GetKernelPreferredWorkGroupSizeMultiple(nint kernelId, nint deviceId)
+		{
+			var api = OclApi.Value;
+			Span<nuint> kernelInfo = stackalloc nuint[1];
+			Span<nuint> kernelInfoSize = stackalloc nuint[1];
+			var errInfo = api.GetKernelWorkGroupInfo(kernelId, deviceId, (uint)CLEnum.KernelPreferredWorkGroupSizeMultiple, Size<nuint>(1), kernelInfo, kernelInfoSize);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get kernel preferred work group size multiple (OpenCL: {errInfo}).");
+
+			return (uint) kernelInfo[0];
 		}
 
 		public static void SetKernelArg<T>(nint kernelId, int index, T arg)
@@ -348,7 +370,6 @@ namespace Emphasis.OpenCL
 		public static nint CreateCommandQueue(nint contextId, nint deviceId, int properties = default)
 		{
 			var api = OclApi.Value;
-
 			var queueId = api.CreateCommandQueue(contextId, deviceId, (CLEnum)properties, out var errQueue);
 			if (errQueue != (int)CLEnum.Success)
 				throw new Exception($"Unable to create a command queue (OpenCL: {errQueue}).");
@@ -387,7 +408,6 @@ namespace Emphasis.OpenCL
 		public static void OnEventStatusChanged(nint eventId, int status, Action action)
 		{
 			var api = OclApi.Value;
-
 			var errCallback = api.SetEventCallback(eventId, status, delegate { action?.Invoke(); }, Span<byte>.Empty);
 			if (errCallback != (int)CLEnum.Success)
 				throw new Exception($"Unable to set event callback (OpenCL: {errCallback}).");
@@ -401,7 +421,6 @@ namespace Emphasis.OpenCL
 		public static void Finish(nint queueId)
 		{
 			var api = OclApi.Value;
-
 			var errFinish = api.Finish(queueId);
 			if (errFinish != (int)CLEnum.Success)
 				throw new Exception($"Unable to finish a command queue (OpenCL: {errFinish}).");
