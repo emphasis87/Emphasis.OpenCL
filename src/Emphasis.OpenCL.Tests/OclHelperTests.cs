@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -232,6 +233,32 @@ namespace Emphasis.OpenCL.Tests
 				Console.WriteLine($"{GetDeviceName(deviceId)}: Work group size: {size}");
 				Console.WriteLine($"{GetDeviceName(deviceId)}: Preferred work group size multiple: {sizeMultiple}");
 			}
+		}
+
+		[Test]
+		public async Task Can_wait_for_events_async()
+		{
+			var platformId = GetPlatforms().First();
+			var contextId = CreateContext(platformId);
+			var eventId = CreateUserEvent(contextId);
+
+			async Task Fire()
+			{
+				await Task.Delay(1000);
+				SetUserEventCompleted(eventId);
+			}
+
+			var sw = new Stopwatch();
+			sw.Start();
+
+			_ = Task.Run(Fire);
+
+			// Act:
+			await WaitForEventsAsync(eventId);
+
+			// Assert:
+			sw.Stop();
+			sw.ElapsedMilliseconds.Should().BeInRange(1000, 1100);
 		}
 	}
 }

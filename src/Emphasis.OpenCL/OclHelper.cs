@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Silk.NET.OpenCL;
 
@@ -753,6 +756,71 @@ namespace Emphasis.OpenCL
 			var errCallback = api.SetProgramReleaseCallback(programId, delegate { action?.Invoke(); }, Span<byte>.Empty);
 			if (errCallback != (int)CLEnum.Success)
 				throw new Exception($"Unable to set program release callback (OpenCL: {errCallback}).");
+		}
+
+		public static void WaitForEvents(IEnumerable<nint> eventIds)
+		{
+			WaitForEvents(eventIds?.ToArray());
+		}
+
+		public static void WaitForEvents(params nint[] eventIds)
+		{
+			if (eventIds.Length == 0)
+				return;
+
+			var api = OclApi.Value;
+			var errWait = api.WaitForEvents((uint) eventIds.Length, eventIds.AsSpan());
+			if (errWait != (int) CLEnum.Success)
+				throw new Exception($"Unable to wait for events (OpenCL: {errWait}).");
+		}
+
+		public static Task WaitForEventsAsync(IEnumerable<nint> eventIds)
+		{
+			return WaitForEventsAsync(eventIds?.ToArray());
+		}
+		
+		public static async Task WaitForEventsAsync(params nint[] eventIds)
+		{
+			if (eventIds.Length == 0)
+				return;
+
+			var expected = eventIds.Length;
+			var count = 0;
+			var tcs = new TaskCompletionSource<int>();
+			foreach (var eventId in eventIds)
+			{
+				OnEventCompleted(eventId, () =>
+				{
+					var result = Interlocked.Increment(ref count);
+					if (result == expected)
+						tcs.SetResult(result);
+				});
+			}
+
+			await tcs.Task;
+		}
+
+		public static nint CreateUserEvent(nint contextId)
+		{
+			var api = OclApi.Value;
+			var eventId = api.CreateUserEvent(contextId, out var errEvent);
+			if (errEvent != (int) CLEnum.Success)
+				throw new Exception($"Unable to create user event (OpenCL: {errEvent}).");
+			
+			return eventId;
+		}
+
+		public static void SetUserEventStatus(nint eventId, int status)
+		{
+			var api = OclApi.Value;
+			var errEvent = api.SetUserEventStatus(eventId, status);
+			if (errEvent != (int)CLEnum.Success)
+				throw new Exception($"Unable to set user event execution status (OpenCL: {errEvent}).");
+		}
+
+		public static void SetUserEventCompleted(nint eventId)
+		{
+			SetUserEventStatus(eventId, (int) CLEnum.Complete);
 		}
 	}
 }
