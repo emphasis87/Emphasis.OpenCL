@@ -306,8 +306,16 @@ namespace Emphasis.OpenCL
 			where T : unmanaged
 		{
 			var api = OclApi.Value;
-
 			var errArg = api.SetKernelArg(kernelId, (uint)index, Size<T>(1), arg);
+			if (errArg != (int)CLEnum.Success)
+				throw new Exception($"Unable to set a kernel argument {index} (OpenCL: {errArg}).");
+		}
+
+		public static void SetKernelArg<T>(nint kernelId, int index, int size, T arg)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+			var errArg = api.SetKernelArg(kernelId, (uint)index, (uint)size, arg);
 			if (errArg != (int)CLEnum.Success)
 				throw new Exception($"Unable to set a kernel argument {index} (OpenCL: {errArg}).");
 		}
