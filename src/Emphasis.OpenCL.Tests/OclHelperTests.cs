@@ -192,5 +192,22 @@ namespace Emphasis.OpenCL.Tests
 
 			ReleaseContext(contextId);
 		}
+
+		private int _contextDestructorCalled = 0;
+
+		[Test]
+		public void Can_set_context_destructor_callback()
+		{
+			// Arrange:
+			var platformId = GetPlatforms().First();
+			var contextId = CreateContext(platformId);
+			
+			// Act:
+			AddContextDestructorCallback(contextId, () => _contextDestructorCalled++);
+			ReleaseContext(contextId);
+
+			// Assert:
+			_contextDestructorCalled.Should().Be(1);
+		}
 	}
 }

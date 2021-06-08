@@ -703,5 +703,29 @@ namespace Emphasis.OpenCL
 			if (errRetain != (int)CLEnum.Success)
 				throw new Exception($"Unable to retain sampler (OpenCL: {errRetain}).");
 		}
+
+		public static void AddContextDestructorCallback(nint contextId, Action action)
+		{
+			var api = OclApi.Value;
+			var errCallback = api.SetContextDestructorCallback(contextId, delegate { action?.Invoke(); }, Span<byte>.Empty);
+			if (errCallback != (int)CLEnum.Success)
+				throw new Exception($"Unable to set context destructor callback (OpenCL: {errCallback}).");
+		}
+
+		public static void AddMemObjectDestructorCallback(nint memObjectId, Action action)
+		{
+			var api = OclApi.Value;
+			var errCallback = api.SetMemObjectDestructorCallback(memObjectId, delegate { action?.Invoke(); }, Span<byte>.Empty);
+			if (errCallback != (int) CLEnum.Success)
+				throw new Exception($"Unable to set memory object destructor callback (OpenCL: {errCallback}).");
+		}
+
+		public static void AddProgramReleaseCallback(nint programId, Action action)
+		{
+			var api = OclApi.Value;
+			var errCallback = api.SetProgramReleaseCallback(programId, delegate { action?.Invoke(); }, Span<byte>.Empty);
+			if (errCallback != (int)CLEnum.Success)
+				throw new Exception($"Unable to set program release callback (OpenCL: {errCallback}).");
+		}
 	}
 }
