@@ -333,7 +333,7 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Unable to set a kernel argument {index} (OpenCL: {errArg}).");
 		}
 
-		public static void SetKernelSizeArg<T>(nint kernelId, int index, int count)
+		public static void SetKernelArgSize<T>(nint kernelId, int index, int count)
 			where T : unmanaged
 		{
 			var api = OclApi.Value;
