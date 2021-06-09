@@ -22,7 +22,7 @@ namespace Emphasis.OpenCL.Tests {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Kernels {
+    public class Kernels {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace Emphasis.OpenCL.Tests {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Emphasis.OpenCL.Tests.Kernels", typeof(Kernels).Assembly);
@@ -51,7 +51,7 @@ namespace Emphasis.OpenCL.Tests {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -61,16 +61,20 @@ namespace Emphasis.OpenCL.Tests {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to void kernel multiply(
-        ///	global int* a, 
-        ///	global int* b,
-        ///    global int c) 
+        ///   Looks up a localized string similar to #ifndef TDepth
+        ///#define TDepth int
+        ///#endif
+        ///
+        ///void kernel multiply(
+        ///	global TDepth* a, 
+        ///	global TDepth* b,
+        ///    int c)
         ///{
         ///	const int x = get_global_id(0);
         ///    b[x] = a[x] * c;
         ///}.
         /// </summary>
-        internal static string multiply {
+        public static string multiply {
             get {
                 return ResourceManager.GetString("multiply", resourceCulture);
             }

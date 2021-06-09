@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Emphasis.OpenCL.Tests\Emphasis.OpenCL.Tests.csproj" />
     <ProjectReference Include="..\Emphasis.OpenCL\Emphasis.OpenCL.csproj" />
   </ItemGroup>
 

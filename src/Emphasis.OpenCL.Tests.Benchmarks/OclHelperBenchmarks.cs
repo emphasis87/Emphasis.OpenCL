@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
 
@@ -13,21 +14,27 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		private nint _deviceId;
 		private nint _contextId;
 		private nint _queueId;
+		private nint _programId;
+		private nint _kernelId;
 
 		public nint[] PlatformIds;
 		public nint[] DeviceIds;
 		public nint DeviceId;
 		public nint ContextId;
 		public string Extensions;
-
+		public uint WorkGroupSize;
 
 		[GlobalSetup]
-		public void Setup()
+		public async Task Setup()
 		{
 			_platformId = OclHelper.GetPlatforms().First();
 			_deviceId = OclHelper.GetDevicesForPlatform(_platformId).First();
 			_contextId = OclHelper.CreateContext(_platformId, new[] {_deviceId});
 			_queueId = OclHelper.CreateCommandQueue(_contextId, _deviceId);
+			_programId = OclHelper.CreateProgram(_contextId, Kernels.multiply);
+			
+			await OclHelper.BuildProgram(_programId, _deviceId);
+			_kernelId = OclHelper.CreateKernel(_programId, "multiply");
 		}
 
 		[GlobalCleanup]
@@ -71,6 +78,12 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		public void GetCommandQueueDevice()
 		{
 			DeviceId = OclHelper.GetCommandQueueDevice(_queueId);
+		}
+
+		[Benchmark]
+		public void GetKernelWorkGroupSize()
+		{
+			WorkGroupSize = OclHelper.GetKernelWorkGroupSize(_kernelId, _deviceId);
 		}
 	}
 }

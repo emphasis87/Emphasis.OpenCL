@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <EmbeddedResource Update="Kernels.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Kernels.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
