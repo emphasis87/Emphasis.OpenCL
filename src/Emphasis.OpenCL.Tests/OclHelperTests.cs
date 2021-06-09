@@ -204,6 +204,7 @@ namespace Emphasis.OpenCL.Tests
 			var contextId = CreateContext(platformId);
 			
 			// Act:
+			// Requires OpenCL 3.0
 			AddContextDestructorCallback(contextId, () => _contextDestructorCalled++);
 			ReleaseContext(contextId);
 
