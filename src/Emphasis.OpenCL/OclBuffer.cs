@@ -8,17 +8,29 @@
 			
 		}
 
-		public static implicit operator nint(OclBuffer buffer) => buffer.Id;
+		public static implicit operator nint(OclBuffer buffer) => buffer.NativeId;
 
-		public OclBuffer<T> Cast<T>() where T : unmanaged => new(Id);
+		public OclBuffer<T> Cast<T>() where T : unmanaged => new(NativeId);
 	}
 
-	public class OclBuffer<T> : OclBuffer
+	public class OclTypedBuffer : OclBuffer
+	{
+		public string NativeType { get; }
+
+		public OclTypedBuffer(nint bufferNativeId, string nativeType) 
+			: base(bufferNativeId)
+		{
+			NativeType = nativeType;
+		}
+	}
+
+	public class OclBuffer<T> : OclTypedBuffer
 		where T : unmanaged
 	{
-		public OclBuffer(nint bufferId) : base(bufferId)
+		public OclBuffer(nint bufferId) 
+			: base(bufferId, GetNativeType<T>())
 		{
-
+			
 		}
 	}
 }
