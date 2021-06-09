@@ -10,8 +10,8 @@
 	  A small library for easier OpenCL manipulation.
     </Description>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	<IsPackageable>true</IsPackageable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackageable>true</IsPackageable>
   </PropertyGroup>
 
   <ItemGroup>
