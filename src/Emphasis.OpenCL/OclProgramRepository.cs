@@ -9,21 +9,21 @@ namespace Emphasis.OpenCL
 	public interface IOclProgramRepository
 	{
 		Task<nint> GetProgram(nint contextId, nint deviceId, string source, string options);
-		Task<nint> GetProgram(OclProgram program);
+		Task<nint> GetProgram(OclProgramSource program);
 	}
 
 	public class OclProgramRepository : IOclProgramRepository, ICancelable
 	{
 		public static IOclProgramRepository Shared { get; } = new OclProgramRepository();
 
-		private readonly ConcurrentDictionary<OclProgram, Lazy<Task<nint>>> _programsLazy = new();
+		private readonly ConcurrentDictionary<OclProgramSource, Lazy<Task<nint>>> _programsLazy = new();
 
 		public Task<nint> GetProgram(nint contextId, nint deviceId, string source, string options)
 		{
-			return GetProgram(new OclProgram(contextId, deviceId, source, options));
+			return GetProgram(new OclProgramSource(contextId, deviceId, source, options));
 		}
 
-		public async Task<nint> GetProgram(OclProgram program)
+		public async Task<nint> GetProgram(OclProgramSource program)
 		{
 			async Task<nint> CreateProgram()
 			{

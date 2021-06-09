@@ -24,8 +24,8 @@ namespace Emphasis.OpenCL.Tests
 
 			using var repository = new OclProgramRepository();
 
-			var multiplyI32 = await repository.GetProgram(new OclProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=int"));
-			var multiplyI16 = await repository.GetProgram(new OclProgram(contextId, deviceId, Kernels.multiply, "-DTDepth=short"));
+			var multiplyI32 = await repository.GetProgram(new OclProgramSource(contextId, deviceId, Kernels.multiply, "-D TDepth=int"));
+			var multiplyI16 = await repository.GetProgram(new OclProgramSource(contextId, deviceId, Kernels.multiply, "-D TDepth=short"));
 
 			var kernelM16 = CreateKernel(multiplyI16, "multiply");
 			var kernelM32 = CreateKernel(multiplyI32, "multiply");
