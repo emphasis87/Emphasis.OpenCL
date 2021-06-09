@@ -260,5 +260,32 @@ namespace Emphasis.OpenCL.Tests
 			sw.Stop();
 			sw.ElapsedMilliseconds.Should().BeInRange(1000, 1100);
 		}
+
+		[Test]
+		public void Can_copy_buffer()
+		{
+			var platformId = GetPlatforms().First();
+			var deviceId = GetPlatformDevices(platformId).First();
+			var contextId = CreateContext(platformId, new[] {deviceId});
+			var queueId = CreateCommandQueue(contextId, deviceId);
+
+			var src = new int[1024];
+			for (var i = 0; i < src.Length; i++)
+			{
+				src[i] = i;
+			}
+
+			// Act:
+			var bufferId = CopyBuffer(contextId, src.AsSpan());
+
+			// Assert:
+			var dst = new int[src.Length];
+			EnqueueReadBuffer(queueId, bufferId, true, 0, src.Length, dst.AsSpan());
+
+			for (var i = 0; i < src.Length; i++)
+			{
+				src[i].Should().Be(dst[i]);
+			}
+		}
 	}
 }

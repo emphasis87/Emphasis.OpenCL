@@ -444,7 +444,7 @@ namespace Emphasis.OpenCL
 			var api = OclApi.Value;
 
 			Span<int> errs = stackalloc int[1];
-			var bufferId = api.CreateBuffer(contextId,  (CLEnum)flags | CLEnum.MemCopyHostPtr, Size<T>(5), source, errs);
+			var bufferId = api.CreateBuffer(contextId,  (CLEnum)flags | CLEnum.MemCopyHostPtr, Size<T>(source.Length), source, errs);
 			var errBuffer = errs[0];
 			if (errBuffer != (int) CLEnum.Success)
 				throw new Exception($"Unable to create a buffer (OpenCL: {errBuffer}).");
