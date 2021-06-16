@@ -253,13 +253,33 @@ namespace Emphasis.OpenCL.Tests
 			sw.Start();
 
 			_ = Task.Run(Fire);
-
+			
 			// Act:
 			await WaitForEventsAsync(eventId);
 
 			// Assert:
 			sw.Stop();
 			sw.ElapsedMilliseconds.Should().BeInRange(1000, 1100);
+		}
+
+		[Test]
+		public async Task Can_wait_for_completed_events_async()
+		{
+			var platformId = GetPlatforms().First();
+			var contextId = CreateContext(platformId);
+			var eventId = CreateUserEvent(contextId);
+
+			SetUserEventCompleted(eventId);
+
+			var sw = new Stopwatch();
+			sw.Start();
+
+			// Act:
+			await WaitForEventsAsync(eventId);
+
+			// Assert:
+			sw.Stop();
+			sw.ElapsedMilliseconds.Should().BeInRange(0, 10);
 		}
 
 		[Test]

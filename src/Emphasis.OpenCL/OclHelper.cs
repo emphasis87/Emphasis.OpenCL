@@ -421,6 +421,62 @@ namespace Emphasis.OpenCL
 			OnEventStatusChanged(eventId, (int) CLEnum.Complete, action);
 		}
 
+		public static int GetEventStatus(nint eventId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoCount = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetEventInfo(eventId, (uint)CLEnum.EventCommandExecutionStatus, Size<nint>(1), info, infoCount);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get event command execution status (OpenCL: {errInfo}).");
+
+			var status = (int)info[0];
+			return status;
+		}
+
+		public static nint GetEventCommandQueue(nint eventId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoCount = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetEventInfo(eventId, (uint)CLEnum.EventCommandQueue, Size<nint>(1), info, infoCount);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get event command queue (OpenCL: {errInfo}).");
+
+			var queueId = info[0];
+			return queueId;
+		}
+
+		public static nint GetEventContext(nint eventId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoCount = stackalloc nuint[1];
+			Span<nint> info = stackalloc nint[1];
+			var errInfo = api.GetEventInfo(eventId, (uint)CLEnum.EventContext, Size<nint>(1), info, infoCount);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get event context (OpenCL: {errInfo}).");
+
+			var contextId = info[0];
+			return contextId;
+		}
+
+		public static uint GetEventReferenceCount(nint eventId)
+		{
+			var api = OclApi.Value;
+
+			Span<nuint> infoCount = stackalloc nuint[1];
+			Span<nuint> info = stackalloc nuint[1];
+			var errInfo = api.GetEventInfo(eventId, (uint)CLEnum.EventReferenceCount, Size<nuint>(1), info, infoCount);
+			if (errInfo != (int)CLEnum.Success)
+				throw new Exception($"Unable to get event reference count (OpenCL: {errInfo}).");
+
+			var referenceCount = (uint)info[0];
+			return referenceCount;
+		}
+
 		public static void Finish(nint queueId)
 		{
 			var api = OclApi.Value;
@@ -784,17 +840,44 @@ namespace Emphasis.OpenCL
 			if (eventIds.Length == 0)
 				return;
 
-			var expected = eventIds.Length;
-			var count = 0;
+			var expectedCount = eventIds.Length;
+			var sem = new SemaphoreSlim(1, 1);
+			var resolved = new HashSet<nint>();
 			var tcs = new TaskCompletionSource<int>();
+			var queueIds = new HashSet<nint>();
+
+			void AddCompletedEvent(nint id)
+			{
+				sem.Wait();
+				try
+				{
+					if (resolved.Add(id) && resolved.Count == expectedCount)
+						tcs.SetResult(expectedCount);
+				}
+				finally
+				{
+					sem.Release();
+				}
+			}
+
 			foreach (var eventId in eventIds)
 			{
-				OnEventCompleted(eventId, () =>
+				OnEventCompleted(eventId, () => AddCompletedEvent(eventId));
+
+				if (GetEventStatus(eventId) == (int)CLEnum.Complete)
 				{
-					var result = Interlocked.Increment(ref count);
-					if (result == expected)
-						tcs.SetResult(result);
-				});
+					AddCompletedEvent(eventId);
+				}
+				else
+				{
+					var queueId = GetEventCommandQueue(eventId);
+					queueIds.Add(queueId);
+				}
+			}
+
+			foreach (var queueId in queueIds.Where(queueId => queueId != 0))
+			{
+				Flush(queueId);
 			}
 
 			await tcs.Task;
