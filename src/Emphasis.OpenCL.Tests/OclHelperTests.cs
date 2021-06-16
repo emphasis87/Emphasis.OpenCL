@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -234,6 +235,38 @@ namespace Emphasis.OpenCL.Tests
 				Console.WriteLine($"{GetDeviceName(deviceId)}: Work group size: {size}");
 				Console.WriteLine($"{GetDeviceName(deviceId)}: Preferred work group size multiple: {sizeMultiple}");
 			}
+		}
+
+		[Test]
+		public void Can_set_event_callback()
+		{
+			var platformId = GetPlatforms().First();
+			var contextId = CreateContext(platformId);
+			var eventId = CreateUserEvent(contextId);
+
+			var eventIds = new HashSet<nint>();
+
+			OnEventCompleted(eventId, () => eventIds.Add(eventId));
+
+			async Task Fire()
+			{
+				await Task.Delay(1000);
+				SetUserEventCompleted(eventId);
+			}
+
+			var sw = new Stopwatch();
+			sw.Start();
+
+			_ = Task.Run(Fire);
+
+			// Act:
+			WaitForEvents(eventId);
+
+			// Assert:
+			sw.Stop();
+			sw.ElapsedMilliseconds.Should().BeInRange(1000, 1100);
+
+			eventIds.Should().Contain(eventId);
 		}
 
 		[Test]
