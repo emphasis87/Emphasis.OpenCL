@@ -105,12 +105,6 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		}
 
 		[Benchmark]
-		public async Task WaitForEventsAsync()
-		{
-			await OclHelper.WaitForEventsAsync(_eventId);
-		}
-
-		[Benchmark]
 		public async Task WaitForEventsTask()
 		{
 			await Task.Run(() => OclHelper.WaitForEvents(_eventId));

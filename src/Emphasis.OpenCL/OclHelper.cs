@@ -830,64 +830,6 @@ namespace Emphasis.OpenCL
 				throw new Exception($"Unable to wait for events (OpenCL: {errWait}).");
 		}
 
-		public static Task WaitForEventsAsync(IEnumerable<nint> eventIds)
-		{
-			return WaitForEventsAsync(eventIds?.ToArray());
-		}
-		
-		/// <summary>
-		/// Uses clSetEventCallback, which does not seem to work for NVIDIA (as of 06/2021).
-		/// In which case use Task.Run(() => WaitForEvents(...));
-		/// </summary>
-		/// <param name="eventIds"></param>
-		/// <returns></returns>
-		public static async Task WaitForEventsAsync(params nint[] eventIds)
-		{
-			if (eventIds.Length == 0)
-				return;
-
-			var tcs = new TaskCompletionSource<int>();
-			var semaphore = new SemaphoreSlim(1, 1);
-			var resolved = new HashSet<nint>();
-			var queueIds = new HashSet<nint>();
-			var expectedCount = eventIds.Length;
-			void AddCompletedEvent(nint id)
-			{
-				semaphore.Wait();
-				try
-				{
-					if (resolved.Add(id) && resolved.Count == expectedCount)
-						tcs.SetResult(expectedCount);
-				}
-				finally
-				{
-					semaphore.Release();
-				}
-			}
-			
-			foreach (var eventId in eventIds)
-			{
-				OnEventCompleted(eventId, () => AddCompletedEvent(eventId));
-
-				if (GetEventStatus(eventId) == (int)CLEnum.Complete)
-				{
-					AddCompletedEvent(eventId);
-				}
-				else
-				{
-					var queueId = GetEventCommandQueue(eventId);
-					queueIds.Add(queueId);
-				}
-			}
-
-			foreach (var queueId in queueIds.Where(queueId => queueId != 0))
-			{
-				Flush(queueId);
-			}
-			
-			await tcs.Task;
-		}
-
 		public static nint CreateUserEvent(nint contextId)
 		{
 			var api = OclApi.Value;
