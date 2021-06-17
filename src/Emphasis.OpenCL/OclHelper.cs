@@ -835,20 +835,25 @@ namespace Emphasis.OpenCL
 			return WaitForEventsAsync(eventIds?.ToArray());
 		}
 		
+		/// <summary>
+		/// Uses clSetEventCallback, which does not seem to work for NVIDIA (as of 06/2021).
+		/// In which case use Task.Run(() => WaitForEvents(...));
+		/// </summary>
+		/// <param name="eventIds"></param>
+		/// <returns></returns>
 		public static async Task WaitForEventsAsync(params nint[] eventIds)
 		{
 			if (eventIds.Length == 0)
 				return;
 
-			var expectedCount = eventIds.Length;
-			var sem = new SemaphoreSlim(1, 1);
-			var resolved = new HashSet<nint>();
 			var tcs = new TaskCompletionSource<int>();
+			var semaphore = new SemaphoreSlim(1, 1);
+			var resolved = new HashSet<nint>();
 			var queueIds = new HashSet<nint>();
-
+			var expectedCount = eventIds.Length;
 			void AddCompletedEvent(nint id)
 			{
-				sem.Wait();
+				semaphore.Wait();
 				try
 				{
 					if (resolved.Add(id) && resolved.Count == expectedCount)
@@ -856,10 +861,10 @@ namespace Emphasis.OpenCL
 				}
 				finally
 				{
-					sem.Release();
+					semaphore.Release();
 				}
 			}
-
+			
 			foreach (var eventId in eventIds)
 			{
 				OnEventCompleted(eventId, () => AddCompletedEvent(eventId));
@@ -879,7 +884,7 @@ namespace Emphasis.OpenCL
 			{
 				Flush(queueId);
 			}
-
+			
 			await tcs.Task;
 		}
 

@@ -16,6 +16,7 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		private nint _queueId;
 		private nint _programId;
 		private nint _kernelId;
+		private nint _eventId;
 
 		public nint[] PlatformIds;
 		public nint[] DeviceIds;
@@ -35,6 +36,17 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 			
 			await OclHelper.BuildProgram(_programId, _deviceId);
 			_kernelId = OclHelper.CreateKernel(_programId, "multiply");
+
+			var memA = OclHelper.CopyBuffer(_contextId, stackalloc int[5] { 1, 2, 3, 4, 5 });
+			var memB = OclHelper.CreateBuffer<int>(_contextId, 5);
+
+			OclHelper.SetKernelArg(_kernelId, 0, memA);
+			OclHelper.SetKernelArg(_kernelId, 1, memB);
+			OclHelper.SetKernelArg(_kernelId, 2, 2);
+			
+			_eventId = OclHelper.EnqueueNDRangeKernel(_queueId, _kernelId, globalWorkSize: stackalloc nuint[] { 5 });
+
+			OclHelper.Finish(_queueId);
 		}
 
 		[GlobalCleanup]
@@ -84,6 +96,24 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		public void GetKernelWorkGroupSize()
 		{
 			WorkGroupSize = OclHelper.GetKernelWorkGroupSize(_kernelId, _deviceId);
+		}
+
+		[Benchmark]
+		public void WaitForEvents()
+		{
+			OclHelper.WaitForEvents(_eventId);
+		}
+
+		[Benchmark]
+		public async Task WaitForEventsAsync()
+		{
+			await OclHelper.WaitForEventsAsync(_eventId);
+		}
+
+		[Benchmark]
+		public async Task WaitForEventsTask()
+		{
+			await Task.Run(() => OclHelper.WaitForEvents(_eventId));
 		}
 	}
 }
