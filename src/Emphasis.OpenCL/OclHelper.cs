@@ -370,6 +370,31 @@ namespace Emphasis.OpenCL
 			return onCompletedEvents[0];
 		}
 
+		public static nint EnqueueFillBuffer<T>(nint queueId, nint bufferId, ReadOnlySpan<T> pattern, uint size = 0, uint offset = 0, Span<nint> waitOnEvents = default)
+			where T : unmanaged
+		{
+			var api = OclApi.Value;
+
+			if (size == 0)
+				size = (uint)GetMemObjectSize(bufferId);
+
+			Span<nint> onCompletedEvents = stackalloc nint[1];
+			var errEnqueue = api.EnqueueFillBuffer(queueId, bufferId,
+				pattern,
+				Size<T>(pattern.Length),
+				offset,
+				size,
+				(uint)waitOnEvents.Length,
+				waitOnEvents,
+				onCompletedEvents);
+
+			if (errEnqueue != (int)CLEnum.Success)
+				throw new Exception($"Unable to enqueue a command to fill a buffer (OpenCL: {errEnqueue}).");
+
+			return onCompletedEvents[0];
+
+		}
+
 		public static nint CreateCommandQueue(nint contextId, nint deviceId, int properties = default)
 		{
 			var api = OclApi.Value;

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
@@ -17,6 +18,7 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		private nint _programId;
 		private nint _kernelId;
 		private nint _eventId;
+		private nint _bufferId;
 
 		public nint[] PlatformIds;
 		public nint[] DeviceIds;
@@ -47,13 +49,16 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 			_eventId = OclHelper.EnqueueNDRangeKernel(_queueId, _kernelId, globalWorkSize: stackalloc nuint[] { 5 });
 
 			OclHelper.Finish(_queueId);
+
+			_bufferId = OclHelper.CreateBuffer<int>(_contextId, 1200 * 1920);
 		}
 
 		[GlobalCleanup]
 		public void Cleanup()
 		{
-			OclHelper.ReleaseContext(_contextId);
+			OclHelper.ReleaseMemObject(_bufferId);
 			OclHelper.ReleaseCommandQueue(_queueId);
+			OclHelper.ReleaseContext(_contextId);
 		}
 
 		[Benchmark]
@@ -96,6 +101,16 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		public void GetKernelWorkGroupSize()
 		{
 			WorkGroupSize = OclHelper.GetKernelWorkGroupSize(_kernelId, _deviceId);
+		}
+
+		[Benchmark]
+		public void EnqueueFillBuffer()
+		{
+			ReadOnlySpan<int> pattern = stackalloc int[] {13};
+			var fillEventId = OclHelper.EnqueueFillBuffer(_queueId, _bufferId, pattern);
+
+			OclHelper.Finish(_queueId);
+			OclHelper.ReleaseEvent(fillEventId);
 		}
 
 		[Benchmark]

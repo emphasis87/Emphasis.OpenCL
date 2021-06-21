@@ -295,5 +295,36 @@ namespace Emphasis.OpenCL.Tests
 				src[i].Should().Be(dst[i]);
 			}
 		}
+
+		[Test]
+		public void Can_EnqueueFillBuffer()
+		{
+			var platformId = GetPlatforms().First();
+			var deviceId = GetPlatformDevices(platformId).First();
+			var contextId = CreateContext(platformId, new[] { deviceId });
+			var queueId = CreateCommandQueue(contextId, deviceId);
+
+			var bufferId = CreateBuffer<int>(contextId, 100);
+
+			// Act:
+			ReadOnlySpan<int> pattern = stackalloc int[] {13};
+			var fillEventId = EnqueueFillBuffer(queueId, bufferId, pattern);
+
+			WaitForEvents(fillEventId);
+			ReleaseEvent(fillEventId);
+
+			// Assert:
+			var result = new int[100];
+			var readEventId = EnqueueReadBuffer(queueId, bufferId, true, 0, 100, result.AsSpan());
+
+			WaitForEvents(readEventId);
+			ReleaseEvent(readEventId);
+			
+			ReleaseMemObject(bufferId);
+			ReleaseCommandQueue(queueId);
+			ReleaseContext(contextId);
+
+			result.Should().Equal(Enumerable.Repeat(13, 100));
+		}
 	}
 }
