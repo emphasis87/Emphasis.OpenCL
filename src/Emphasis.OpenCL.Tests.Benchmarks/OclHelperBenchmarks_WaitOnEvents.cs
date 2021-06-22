@@ -9,7 +9,7 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 	[MarkdownExporter]
 	[ShortRunJob]
 	[Orderer(SummaryOrderPolicy.Method, MethodOrderPolicy.Alphabetical)]
-	public class OclHelperBenchmarks
+	public class OclHelperBenchmarks_WaitOnEvents
 	{
 		private nint _platformId;
 		private nint _deviceId;
@@ -17,13 +17,7 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 		private nint _queueId;
 		private nint _programId;
 		private nint _kernelId;
-
-		public nint[] PlatformIds;
-		public nint[] DeviceIds;
-		public nint DeviceId;
-		public nint ContextId;
-		public string Extensions;
-		public uint WorkGroupSize;
+		private nint _eventId;
 
 		[GlobalSetup]
 		public async Task Setup()
@@ -36,56 +30,36 @@ namespace Emphasis.OpenCL.Tests.Benchmarks
 			
 			await OclHelper.BuildProgram(_programId, _deviceId);
 			_kernelId = OclHelper.CreateKernel(_programId, "multiply");
+
+			var memA = OclHelper.CopyBuffer(_contextId, stackalloc int[5] { 1, 2, 3, 4, 5 });
+			var memB = OclHelper.CreateBuffer<int>(_contextId, 5);
+
+			OclHelper.SetKernelArg(_kernelId, 0, memA);
+			OclHelper.SetKernelArg(_kernelId, 1, memB);
+			OclHelper.SetKernelArg(_kernelId, 2, 2);
+			
+			_eventId = OclHelper.EnqueueNDRangeKernel(_queueId, _kernelId, globalWorkSize: stackalloc nuint[] { 5 });
+
+			OclHelper.Finish(_queueId);
 		}
 
 		[GlobalCleanup]
 		public void Cleanup()
 		{
-			OclHelper.ReleaseKernel(_kernelId);
 			OclHelper.ReleaseCommandQueue(_queueId);
 			OclHelper.ReleaseContext(_contextId);
 		}
 
 		[Benchmark]
-		public void GetPlatforms()
+		public void WaitForEvents()
 		{
-			PlatformIds = OclHelper.GetPlatforms();
+			OclHelper.WaitForEvents(_eventId);
 		}
 
 		[Benchmark]
-		public void GetPlatformExtensions()
+		public async Task WaitForEventsTask()
 		{
-			Extensions = OclHelper.GetPlatformExtensions(_platformId);
-		}
-
-		[Benchmark]
-		public void GetDeviceExtensions()
-		{
-			Extensions = OclHelper.GetDeviceExtensions(_deviceId);
-		}
-
-		[Benchmark]
-		public void GetDevicesForPlatform()
-		{
-			DeviceIds = OclHelper.GetDevicesForPlatform(_platformId);
-		}
-
-		[Benchmark]
-		public void GetCommandQueueContext()
-		{
-			ContextId = OclHelper.GetCommandQueueContext(_queueId);
-		}
-
-		[Benchmark]
-		public void GetCommandQueueDevice()
-		{
-			DeviceId = OclHelper.GetCommandQueueDevice(_queueId);
-		}
-
-		[Benchmark]
-		public void GetKernelWorkGroupSize()
-		{
-			WorkGroupSize = OclHelper.GetKernelWorkGroupSize(_kernelId, _deviceId);
+			await Task.Run(() => OclHelper.WaitForEvents(_eventId));
 		}
 	}
 }
